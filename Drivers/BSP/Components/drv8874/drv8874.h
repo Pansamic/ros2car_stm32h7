@@ -31,30 +31,91 @@ typedef enum {
     DRV8874_DIRECTION_BACKWARD = 1
 } drv8874_direction_t;
 
+typedef enum {
+    DRV8874_MODE_POSITION = 0,
+    DRV8874_MODE_VELOCITY = 1,
+    DRV8874_MODE_TORQUE = 2,
+    DRV8874_MODE_TORQUE_POSITION = 3,
+    DRV8874_MODE_TORQUE_VELOCITY = 4
+}drv8874_mode_t;
+
 typedef struct {
+    uint8_t id;
+
+    /* @ref drv8874_mode_t */
+    drv8874_mode_t mode;
+
+    /* reverse=1 set motor rotates in reverse direction */
     uint8_t reverse;
+
+    /* DRV8874 PH pin. 1 is forward, 0 is reverse */
     GPIO_TypeDef* ctrl_gpio_port;
     uint32_t ctrl_gpio_pin;
+
+    /* Timer to generate PWM wave */
     TIM_TypeDef* pwm_timer;
-    uint32_t channel;
+    /* PWM channel generate PWM wave for this motor */
+    uint32_t pwm_channel;
+    /* PWM timer auto reload register value. Calculate feed forward with this parameter and `max_velocity`. */
+    uint32_t pwm_tim_autoreload;
+
+    /* Timer to keep encoder pulses */
     TIM_TypeDef* encoder_timer;
-    uint32_t pwm_peroid_count;
-    uint16_t turndown_ratio;
-    float max_velocity;
-    float kp;
-    float kd;
-    float previous_error;
-    float error;
-    float control;
-    volatile float target_velocity;
-    volatile float current_velocity;
-    volatile float target_position;
-    volatile float current_position;
-    volatile int32_t encoder_count;
+
+    int32_t encoder_count;
     int32_t previous_encoder_count;
     uint32_t encoder_round_count;
-    uint32_t timer_frequency;
-    int32_t timer_count;
+
+    /* Basic timer to calculate the velocity of the motor with time between controller updates. */
+    TIM_TypeDef* interval_timer;
+    uint32_t interval_timer_frequency;
+    int32_t interval_timer_count;
+
+    /* Motor torque coefficient */
+    float torque_coefficient;
+
+    /* Motor turndown ratio */
+    uint16_t turndown_ratio;
+
+    /* A proximate value of max velocity of motor, unit: rad/s.
+     * Calculate feed forward with this parameter and `pwm_tim_autoreload`. */
+    float max_velocity;
+
+    /* Position PD control parameters */
+    float kp_pos;
+    float kd_pos;
+    float prev_error_pos;
+    float error_pos;
+    float control_pos;
+
+    /* Velocity PD control parameters */
+    float kp_vel;
+    float kd_vel;
+    float prev_error_vel;
+    float error_vel;
+    float control_vel;
+
+    /* Torque PD control parameters */
+    float kp_torq;
+    float kd_torq;
+    float prev_error_torq;
+    float error_torq;
+    float control_torq;
+
+
+    /* Target angular velocity, unit: rad/s */
+    float target_velocity;
+    /* Current angular velocity, unit: rad/s */
+    float current_velocity;
+    /* Target angular position, unit: rad */
+    float target_position;
+    /* Current angular position, unit:rad */
+    float current_position;
+    /* Target torque, unit: Nm */
+    float target_torque;
+    /* Current torque, unit: Nm */
+    float current_torque;
+
 } drv8874_t;
 
 extern drv8874_t motors[4];
@@ -62,19 +123,33 @@ extern drv8874_t motors[4];
 /**
  * @brief Initialize 4 DRV8874 motor driver instances and create control task.
  * 
- * @param dev 
  * @return drv8874_err_t 
  */
-drv8874_err_t drv8874_init(drv8874_t *dev);
+drv8874_err_t drv8874_init();
+/**
+ * @brief Set motor to position control mode.
+ * 
+ * @param dev Pointer to DRV8874 driver instance.
+ * @param kp Kp value of PD position controller.
+ * @param kd Kd value of PD position controller.
+ * @return drv8874_err_t 
+ */
 drv8874_err_t drv8874_set_position_control(drv8874_t *dev, float kp, float kd);
 drv8874_err_t drv8874_set_velecity_control(drv8874_t *dev, float kp, float kd);
 drv8874_err_t drv8874_set_torque_control(drv8874_t *dev, float kp, float kd);
-drv8874_err_t drv9974_set_position(drv8874_t *dev, float position);
+drv8874_err_t drv8874_set_torque_position_control(drv8874_t *dev, float kp, float kd);
+drv8874_err_t drv8874_set_torque_velocity_control(drv8874_t *dev, float kp, float kd);
+drv8874_err_t drv8874_set_position(drv8874_t *dev, float position);
 drv8874_err_t drv8874_set_velocity(drv8874_t *dev, float velocity);
 drv8874_err_t drv8874_set_torque(drv8874_t *dev, float torque);
 drv8874_err_t drv8874_set_direction(drv8874_t *dev, drv8874_direction_t direction);
 drv8874_err_t drv8874_start(drv8874_t *dev);
 drv8874_err_t drv8874_brake(drv8874_t *dev);
 drv8874_err_t drv8874_stop(drv8874_t *dev);
-
+drv8874_err_t drv8874_update_pos_control(drv8874_t *dev);
+drv8874_err_t drv8874_update_vel_control(drv8874_t *dev);
+drv8874_err_t drv8874_update_torque_control(drv8874_t *dev);
+drv8874_err_t drv8874_update_torq_pos_control(drv8874_t *dev);
+drv8874_err_t drv8874_update_torq_vel_control(drv8874_t *dev);
+drv8874_err_t drv8874_update_control(drv8874_t *dev);
 #endif // __DRV8874_H__

@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "syslog.h"
+#include "drv8874.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -712,6 +713,26 @@ void USART3_IRQHandler(void)
   /* USER CODE BEGIN USART3_IRQn 1 */
 
   /* USER CODE END USART3_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM8 update interrupt and TIM13 global interrupt.
+  */
+void TIM8_UP_TIM13_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM8_UP_TIM13_IRQn 0 */
+  if(LL_TIM_IsActiveFlag_UPDATE(TIM13))
+  {
+    LL_TIM_ClearFlag_UPDATE(TIM13);
+    motors[0].interval_timer_count += 0x10000;
+    motors[1].interval_timer_count += 0x10000;
+    motors[2].interval_timer_count += 0x10000;
+    motors[3].interval_timer_count += 0x10000;
+  }
+  /* USER CODE END TIM8_UP_TIM13_IRQn 0 */
+  /* USER CODE BEGIN TIM8_UP_TIM13_IRQn 1 */
+
+  /* USER CODE END TIM8_UP_TIM13_IRQn 1 */
 }
 
 /**

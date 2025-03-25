@@ -95,18 +95,19 @@ int uart_read(uart_t* pcb, void* pdata, size_t length, size_t* read_length);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define ENCODER_TIM TIM13
-#define MOTOR3_ENC_TIM LPTIM1
 #define MOTOR4_ENC_TIM LPTIM2
-#define ADC_TRIG_TIM LPTIM3
-#define BUZZER_TIM TIM15
 #define RGB_TIM TIM17
-#define SERVO34_TIM TIM12
-#define SERVO12_TIM TIM8
 #define GPS_PPS_TIM TIM5
+#define ADC_TRIG_TIM LPTIM3
+#define ENCODER_TIM TIM13
+#define MOTOR1_ENC_TIM TIM2
+#define BUZZER_TIM TIM15
 #define CAM_SYNC_TIM TIM4
-#define MOTOR2_ENC_TIM TIM3_IP_HANDLE
-#define MOTOR1_ENC_TIM TIM2_IP_HANDLE
+#define SERVO12_TIM TIM8
+#define MOTOR2_ENC_TIM TIM3
+#define MOTOR3_ENC_TIM LPTIM1
+#define SERVO34_TIM TIM12
+#define MOTOR_PWM_TIM TIM1
 #define SPI_CS_EXT_Pin LL_GPIO_PIN_13
 #define SPI_CS_EXT_GPIO_Port GPIOC
 #define PWM_RGB_Pin LL_GPIO_PIN_9
