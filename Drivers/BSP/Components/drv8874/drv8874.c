@@ -9,6 +9,7 @@
  * 
  */
 #include <string.h>
+#include <stdlib.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "timers.h"
@@ -29,12 +30,12 @@ static xTimerHandle motor_control_timer;
 
 static void drv8874_update_timer(TimerHandle_t xTimer);
 static drv8874_err_t drv8874_init_adc(void);
-static portBASE_TYPE drv8874_control_command(int8_t * write_buffer, size_t write_buffer_len, const int8_t * command_string);
+static BaseType_t drv8874_control_command(char * write_buffer, size_t write_buffer_len, const char * command_string);
 
 static const CLI_Command_Definition_t drv8874_control_command_def =
 {
-    ( const int8_t * const ) "drv8874", /* The command string to type. */
-    ( const int8_t * const ) "drv8874 <ID> <mode> <target value>:\r\nSet DRV8874 motor control mode and parameters.\r\n\r\n",
+    ( const char * const ) "drv8874", /* The command string to type. */
+    ( const char * const ) "drv8874 <ID> <mode> <target value>:\r\nSet DRV8874 motor control mode and parameters.\r\n\r\n",
     drv8874_control_command, /* The function to run. */
     -1 /* No parameters are expected. */
 };
@@ -65,9 +66,9 @@ static drv8874_err_t drv8874_init_adc(void)
     return DRV8874_OK;
 }
 
-static portBASE_TYPE drv8874_control_command(int8_t * write_buffer, size_t write_buffer_len, const int8_t * command_string)
+static portBASE_TYPE drv8874_control_command(char * write_buffer, size_t write_buffer_len, const char * command_string)
 {
-    int8_t *parameter_string;
+    char *parameter_string;
     portBASE_TYPE parameter_string_length;
     int32_t motor_id;
     float target_value;
@@ -75,7 +76,7 @@ static portBASE_TYPE drv8874_control_command(int8_t * write_buffer, size_t write
     char mode[16];
 
     // Parse motor ID
-    parameter_string = (int8_t *) FreeRTOS_CLIGetParameter(command_string, 1, &parameter_string_length);
+    parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, 1, &parameter_string_length);
     if (parameter_string == NULL)
     {
         write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Missing motor ID.\r\n");
@@ -90,7 +91,7 @@ static portBASE_TYPE drv8874_control_command(int8_t * write_buffer, size_t write
     motor = &motors[motor_id - 1];
 
     // Parse mode
-    parameter_string = (int8_t *) FreeRTOS_CLIGetParameter(command_string, 2, &parameter_string_length);
+    parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, 2, &parameter_string_length);
     if (parameter_string == NULL)
     {
         write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Missing mode.\r\n");
@@ -100,7 +101,7 @@ static portBASE_TYPE drv8874_control_command(int8_t * write_buffer, size_t write
     mode[parameter_string_length] = '\0';
 
     // Parse target value
-    parameter_string = (int8_t *) FreeRTOS_CLIGetParameter(command_string, 3, &parameter_string_length);
+    parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, 3, &parameter_string_length);
     if (parameter_string == NULL)
     {
         write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Missing target value.\r\n");
@@ -147,9 +148,9 @@ drv8874_err_t drv8874_init()
     motors[0].pwm_timer = MOTOR_PWM_TIM;
     motors[0].pwm_channel = LL_TIM_CHANNEL_CH1;
     motors[0].pwm_tim_autoreload = 1000;
-    motors[0].encoder_timer = ENCODER_TIM;
+    motors[0].encoder_timer = MOTOR1_ENC_TIM;
     motors[0].encoder_round_count = 13*4;
-    motors[0].interval_timer = ENCODER_TIM;
+    motors[0].interval_timer = ENC_PERIOD_TIM;
     motors[0].interval_timer_frequency = 1000000;
     motors[0].torque_coefficient = 1.00f;
     motors[0].turndown_ratio = 30;
@@ -169,9 +170,9 @@ drv8874_err_t drv8874_init()
     motors[1].pwm_timer = MOTOR_PWM_TIM;
     motors[1].pwm_channel = LL_TIM_CHANNEL_CH3;
     motors[1].pwm_tim_autoreload = 1000;
-    motors[1].encoder_timer = ENCODER_TIM;
+    motors[1].encoder_timer = MOTOR2_ENC_TIM;
     motors[1].encoder_round_count = 13*4;
-    motors[1].interval_timer = ENCODER_TIM;
+    motors[1].interval_timer = ENC_PERIOD_TIM;
     motors[1].interval_timer_frequency = 1000000;
     motors[1].torque_coefficient = 1.00f;
     motors[1].turndown_ratio = 30;
@@ -191,9 +192,9 @@ drv8874_err_t drv8874_init()
     motors[2].pwm_timer = MOTOR_PWM_TIM;
     motors[2].pwm_channel = LL_TIM_CHANNEL_CH2;
     motors[2].pwm_tim_autoreload = 1000;
-    motors[2].encoder_timer = ENCODER_TIM;
+    motors[2].encoder_timer = MOTOR3_ENC_TIM;
     motors[2].encoder_round_count = 13*4;
-    motors[2].interval_timer = ENCODER_TIM;
+    motors[2].interval_timer = ENC_PERIOD_TIM;
     motors[2].interval_timer_frequency = 1000000;
     motors[2].torque_coefficient = 1.00f;
     motors[2].turndown_ratio = 30;
@@ -213,9 +214,9 @@ drv8874_err_t drv8874_init()
     motors[3].pwm_timer = MOTOR_PWM_TIM;
     motors[3].pwm_channel = LL_TIM_CHANNEL_CH4;
     motors[3].pwm_tim_autoreload = 1000;
-    motors[3].encoder_timer = ENCODER_TIM;
+    motors[3].encoder_timer = MOTOR4_ENC_TIM;
     motors[3].encoder_round_count = 13*4;
-    motors[3].interval_timer = ENCODER_TIM;
+    motors[3].interval_timer = ENC_PERIOD_TIM;
     motors[3].interval_timer_frequency = 1000000;
     motors[3].torque_coefficient = 1.00f;
     motors[3].turndown_ratio = 30;
@@ -251,8 +252,8 @@ drv8874_err_t drv8874_init()
     LL_TIM_EnableCounter(MOTOR2_ENC_TIM);
     LL_LPTIM_StartCounter(MOTOR3_ENC_TIM, LL_LPTIM_OPERATING_MODE_CONTINUOUS);
     LL_LPTIM_StartCounter(MOTOR4_ENC_TIM, LL_LPTIM_OPERATING_MODE_CONTINUOUS);
-    LL_TIM_EnableCounter(ENCODER_TIM);
-    LL_TIM_EnableIT_UPDATE(ENCODER_TIM);
+    LL_TIM_EnableCounter(ENC_PERIOD_TIM);
+    LL_TIM_EnableIT_UPDATE(ENC_PERIOD_TIM);
     LL_TIM_EnableAllOutputs(MOTOR_PWM_TIM);
 
     /* Create FreeRTOS timer to handle motor control calculation. */
@@ -451,13 +452,22 @@ drv8874_err_t drv8874_update_control(drv8874_t *dev)
 {
     drv8874_err_t err = DRV8874_OK;
 
-    dev->encoder_count += (int16_t)LL_TIM_GetCounter(dev->encoder_timer);
-    LL_TIM_SetCounter(dev->encoder_timer, 0);
+    if(dev->encoder_timer == LPTIM1 || dev->encoder_timer == LPTIM2 || dev->encoder_timer == LPTIM3 || dev->encoder_timer == LPTIM4)
+    {
+        dev->encoder_count += (int16_t)LL_LPTIM_GetCounter((LPTIM_TypeDef*)dev->encoder_timer);
+        LL_LPTIM_ResetCounter((LPTIM_TypeDef*)dev->encoder_timer);
+    }
+    else
+    {
+        dev->encoder_count += (int16_t)LL_TIM_GetCounter((TIM_TypeDef*)dev->encoder_timer);
+        LL_TIM_SetCounter((TIM_TypeDef*)dev->encoder_timer, 0);
+    }
+
     dev->current_position = (float)dev->encoder_count / (dev->encoder_round_count * dev->turndown_ratio) * 2 * 3.14159265f;
 
     /* `dev->interval` increases 65536 in update interrupt of interval timer */
-    dev->interval_timer_count += LL_TIM_GetCounter(dev->interval_timer);
-    LL_TIM_SetCounter(dev->interval_timer, 0);
+    dev->interval_timer_count += LL_TIM_GetCounter((TIM_TypeDef*)dev->interval_timer);
+    LL_TIM_SetCounter((TIM_TypeDef*)dev->interval_timer, 0);
 
     /* Calculate angular velocity */
     dev->current_velocity = 2 * 3.14159265f * 

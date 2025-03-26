@@ -9,6 +9,8 @@
  * 
  */
 #include "main.h"
+#include "FreeRTOS.h"
+#include "task.h"
 #include "icm42688p.h"
 
 #define UB0_REG_DEVICE_CONFIG  0x11
@@ -241,15 +243,9 @@ static void icm42688p_spi_write_reg(uint8_t reg, const uint8_t data)
 
 icm42688p_err_t icm42688p_init(void)
 {
-    uint8_t data;
-    icm42688p_err_t ret;
-
     /* Soft reset ICM-42688-P */
     icm42688p_write_reg(UB0_REG_DEVICE_CONFIG, 0x01);
-    if(ret != ICM42688P_OK)
-    {
-        return ret;
-    }
+
     /* Wait 10 ms for soft reset be effective. */
     vTaskDelay(pdMS_TO_TICKS(10));
 
@@ -283,7 +279,6 @@ icm42688p_err_t icm42688p_init(void)
 icm42688p_err_t icm42688p_read(icm42688p_t *data)
 {
     uint8_t buf[14];
-    icm42688p_err_t ret;
     
     icm42688p_read_regs(UB0_REG_TEMP_DATA1, buf, 14);
 

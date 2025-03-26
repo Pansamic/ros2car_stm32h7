@@ -9,7 +9,7 @@ char log_fmt_buffer[LOG_TEMP_BUFFER_SIZE];
 void log_critical(const char* fmt, ...)
 {
 #if LOG_LEVEL <= LOG_LEVEL_CRITICAL
-    const char* p = log_fmt_buffer;
+    char* p = log_fmt_buffer;
     va_list args;
     va_start(args, fmt);
     size_t len = 0;
@@ -30,7 +30,7 @@ void log_critical(const char* fmt, ...)
 void log_error(const char* fmt, ...)
 {
 #if LOG_LEVEL <= LOG_LEVEL_ERROR
-    const char* p = log_fmt_buffer;
+    char* p = log_fmt_buffer;
     va_list args;
     va_start(args, fmt);
     size_t len = 0;
@@ -51,7 +51,7 @@ void log_error(const char* fmt, ...)
 void log_warn(const char* fmt, ...)
 {
 #if LOG_LEVEL <= LOG_LEVEL_WARN
-    const char* p = log_fmt_buffer;
+    char* p = log_fmt_buffer;
     va_list args;
     va_start(args, fmt);
     size_t len = 0;
@@ -72,7 +72,7 @@ void log_warn(const char* fmt, ...)
 void log_info(const char* fmt, ...)
 {
 #if LOG_LEVEL <= LOG_LEVEL_INFO
-    const char* p = log_fmt_buffer;
+    char* p = log_fmt_buffer;
     va_list args;
     va_start(args, fmt);
     size_t len = 0;
@@ -93,7 +93,7 @@ void log_info(const char* fmt, ...)
 void log_debug(const char* fmt, ...)
 {
 #if LOG_LEVEL <= LOG_LEVEL_DEBUG
-    const char* p = log_fmt_buffer;
+    char* p = log_fmt_buffer;
     va_list args;
     va_start(args, fmt);
     size_t len = 0;
@@ -114,7 +114,7 @@ void log_debug(const char* fmt, ...)
 void log_trace(const char* fmt, ...)
 {
 #if LOG_LEVEL <= LOG_LEVEL_TRACE
-    const char* p = log_fmt_buffer;
+    char* p = log_fmt_buffer;
     va_list args;
     va_start(args, fmt);
     size_t len = 0;

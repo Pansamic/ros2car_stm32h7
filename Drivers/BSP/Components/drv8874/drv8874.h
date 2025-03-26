@@ -53,21 +53,21 @@ typedef struct {
     uint32_t ctrl_gpio_pin;
 
     /* Timer to generate PWM wave */
-    TIM_TypeDef* pwm_timer;
+    void* pwm_timer;
     /* PWM channel generate PWM wave for this motor */
     uint32_t pwm_channel;
     /* PWM timer auto reload register value. Calculate feed forward with this parameter and `max_velocity`. */
     uint32_t pwm_tim_autoreload;
 
     /* Timer to keep encoder pulses */
-    TIM_TypeDef* encoder_timer;
+    void* encoder_timer;
 
     int32_t encoder_count;
     int32_t previous_encoder_count;
     uint32_t encoder_round_count;
 
     /* Basic timer to calculate the velocity of the motor with time between controller updates. */
-    TIM_TypeDef* interval_timer;
+    void* interval_timer;
     uint32_t interval_timer_frequency;
     int32_t interval_timer_count;
 
