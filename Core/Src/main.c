@@ -31,6 +31,7 @@
 #include "oled.h"
 #include "rx8900ce.h"
 #include "ws2812b.h"
+#include "FreeRTOS_CLI.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,7 +92,7 @@ static void MX_TIM5_Init(void);
 static void MX_RNG_Init(void);
 static void MX_TIM17_Init(void);
 static void MX_IWDG1_Init(void);
-static void MX_TIM13_Init(void);
+static void MX_TIM7_Init(void);
 void startup(void const * argument);
 void cmd_process(void const * argument);
 
@@ -182,7 +183,7 @@ int main(void)
   MX_TIM17_Init();
   MX_FATFS_Init();
   MX_IWDG1_Init();
-  MX_TIM13_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -274,13 +275,13 @@ void SystemClock_Config(void)
   LL_RCC_PLL1P_Enable();
   LL_RCC_PLL1Q_Enable();
   LL_RCC_PLL1R_Enable();
-  LL_RCC_PLL1_SetVCOInputRange(LL_RCC_PLLINPUTRANGE_4_8);
+  LL_RCC_PLL1_SetVCOInputRange(LL_RCC_PLLINPUTRANGE_8_16);
   LL_RCC_PLL1_SetVCOOutputRange(LL_RCC_PLLVCORANGE_WIDE);
-  LL_RCC_PLL1_SetM(5);
-  LL_RCC_PLL1_SetN(192);
+  LL_RCC_PLL1_SetM(3);
+  LL_RCC_PLL1_SetN(72);
   LL_RCC_PLL1_SetP(2);
   LL_RCC_PLL1_SetQ(15);
-  LL_RCC_PLL1_SetR(2);
+  LL_RCC_PLL1_SetR(12);
   LL_RCC_PLL1_Enable();
 
    /* Wait till PLL is ready */
@@ -322,11 +323,11 @@ void PeriphCommonClock_Config(void)
   LL_RCC_PLL2P_Enable();
   LL_RCC_PLL2_SetVCOInputRange(LL_RCC_PLLINPUTRANGE_8_16);
   LL_RCC_PLL2_SetVCOOutputRange(LL_RCC_PLLVCORANGE_MEDIUM);
-  LL_RCC_PLL2_SetM(2);
+  LL_RCC_PLL2_SetM(3);
   LL_RCC_PLL2_SetN(12);
   LL_RCC_PLL2_SetP(2);
-  LL_RCC_PLL2_SetQ(2);
-  LL_RCC_PLL2_SetR(2);
+  LL_RCC_PLL2_SetQ(4);
+  LL_RCC_PLL2_SetR(4);
   LL_RCC_PLL2_Enable();
 
    /* Wait till PLL is ready */
@@ -887,7 +888,7 @@ static void MX_RTC_Init(void)
     LL_RCC_ReleaseBackupDomainReset();
   LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_HSE);
   }
-  LL_RCC_SetRTC_HSEPrescaler(LL_RCC_RTC_HSE_DIV_25);
+  LL_RCC_SetRTC_HSEPrescaler(LL_RCC_RTC_HSE_DIV_40);
 
   /* Peripheral clock enable */
   LL_RCC_EnableRTC();
@@ -1431,6 +1432,43 @@ static void MX_TIM5_Init(void)
 }
 
 /**
+  * @brief TIM7 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM7_Init(void)
+{
+
+  /* USER CODE BEGIN TIM7_Init 0 */
+
+  /* USER CODE END TIM7_Init 0 */
+
+  LL_TIM_InitTypeDef TIM_InitStruct = {0};
+
+  /* Peripheral clock enable */
+  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM7);
+
+  /* TIM7 interrupt Init */
+  NVIC_SetPriority(TIM7_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
+  NVIC_EnableIRQ(TIM7_IRQn);
+
+  /* USER CODE BEGIN TIM7_Init 1 */
+
+  /* USER CODE END TIM7_Init 1 */
+  TIM_InitStruct.Prescaler = 119;
+  TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
+  TIM_InitStruct.Autoreload = 65535;
+  LL_TIM_Init(TIM7, &TIM_InitStruct);
+  LL_TIM_DisableARRPreload(TIM7);
+  LL_TIM_SetTriggerOutput(TIM7, LL_TIM_TRGO_RESET);
+  LL_TIM_DisableMasterSlaveMode(TIM7);
+  /* USER CODE BEGIN TIM7_Init 2 */
+
+  /* USER CODE END TIM7_Init 2 */
+
+}
+
+/**
   * @brief TIM8 Initialization Function
   * @param None
   * @retval None
@@ -1450,10 +1488,6 @@ static void MX_TIM8_Init(void)
 
   /* Peripheral clock enable */
   LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM8);
-
-  /* TIM8 interrupt Init */
-  NVIC_SetPriority(TIM8_UP_TIM13_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
-  NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
 
   /* USER CODE BEGIN TIM8_Init 1 */
 
@@ -1575,42 +1609,6 @@ static void MX_TIM12_Init(void)
 }
 
 /**
-  * @brief TIM13 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM13_Init(void)
-{
-
-  /* USER CODE BEGIN TIM13_Init 0 */
-
-  /* USER CODE END TIM13_Init 0 */
-
-  LL_TIM_InitTypeDef TIM_InitStruct = {0};
-
-  /* Peripheral clock enable */
-  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM13);
-
-  /* TIM13 interrupt Init */
-  NVIC_SetPriority(TIM8_UP_TIM13_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
-  NVIC_EnableIRQ(TIM8_UP_TIM13_IRQn);
-
-  /* USER CODE BEGIN TIM13_Init 1 */
-
-  /* USER CODE END TIM13_Init 1 */
-  TIM_InitStruct.Prescaler = 119;
-  TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-  TIM_InitStruct.Autoreload = 65535;
-  TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
-  LL_TIM_Init(TIM13, &TIM_InitStruct);
-  LL_TIM_DisableARRPreload(TIM13);
-  /* USER CODE BEGIN TIM13_Init 2 */
-
-  /* USER CODE END TIM13_Init 2 */
-
-}
-
-/**
   * @brief TIM15 Initialization Function
   * @param None
   * @retval None
@@ -1707,7 +1705,7 @@ static void MX_TIM17_Init(void)
   /* USER CODE END TIM17_Init 1 */
   TIM_InitStruct.Prescaler = 0;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-  TIM_InitStruct.Autoreload = 65535;
+  TIM_InitStruct.Autoreload = 299;
   TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
   TIM_InitStruct.RepetitionCounter = 0;
   LL_TIM_Init(TIM17, &TIM_InitStruct);
@@ -2622,6 +2620,43 @@ int uart_read(uart_t* pcb, void* pdata, size_t length, size_t* read_length)
     return err;
 }
 
+/**
+  * @brief  This function performs one random number generation.
+  *
+  * @retval uint32_t unsigned 32-bit random number
+  */
+uint32_t get_random_number(void)
+{
+  uint32_t rand_num = 0;
+
+  // LL_RNG_EnableCondReset(RNG);
+  // LL_RNG_SetHealthConfig(RNG,0x17590ABCU);
+  // LL_RNG_SetHealthConfig(RNG,0x00007274U);
+  // LL_RNG_DisableCondReset(RNG);
+
+  /* Initialize random numbers generation */
+  LL_RNG_Enable(RNG);
+
+  /* Generate Random 32bit Numbers */
+  /* Wait for DRDY flag to be raised */
+  while (!LL_RNG_IsActiveFlag_DRDY(RNG));
+
+  /* Check if error occurs */
+  if ((LL_RNG_IsActiveFlag_CECS(RNG) ) || (LL_RNG_IsActiveFlag_SECS(RNG)))
+  {
+    return 0;
+  }
+  
+  /* Otherwise, no error detected : Value of generated random number could be retrieved
+    and stored in variable */
+  rand_num = LL_RNG_ReadRandData32(RNG);
+
+  /* Stop random numbers generation */
+  LL_RNG_Disable(RNG);
+
+  return rand_num;
+}
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_startup */
@@ -2662,7 +2697,7 @@ void cmd_process(void const * argument)
   size_t delimeter_offset = 0;
 
   /* FreeRTOS command line interface internal buffer */
-  int8_t* freertos_cli_write_buf = FreeRTOS_CLIGetOutputBuffer();
+  char* freertos_cli_write_buf = FreeRTOS_CLIGetOutputBuffer();
 
   /* A continuous memory buffer to process command and its parameters. */
   char command_str[64] = {0};
@@ -2713,11 +2748,11 @@ void MPU_Config(void)
 
   /** Initializes and configures the Region and the memory to be protected
   */
-  LL_MPU_ConfigRegion(LL_MPU_REGION_NUMBER1, 0x0, 0x30000000, LL_MPU_REGION_SIZE_512B|LL_MPU_TEX_LEVEL0|LL_MPU_REGION_FULL_ACCESS|LL_MPU_INSTRUCTION_ACCESS_ENABLE|LL_MPU_ACCESS_NOT_SHAREABLE|LL_MPU_ACCESS_NOT_CACHEABLE|LL_MPU_ACCESS_BUFFERABLE);
+  LL_MPU_ConfigRegion(LL_MPU_REGION_NUMBER1, 0x0, 0x30020000, LL_MPU_REGION_SIZE_512B|LL_MPU_TEX_LEVEL0|LL_MPU_REGION_FULL_ACCESS|LL_MPU_INSTRUCTION_ACCESS_ENABLE|LL_MPU_ACCESS_NOT_SHAREABLE|LL_MPU_ACCESS_NOT_CACHEABLE|LL_MPU_ACCESS_BUFFERABLE);
 
   /** Initializes and configures the Region and the memory to be protected
   */
-  LL_MPU_ConfigRegion(LL_MPU_REGION_NUMBER2, 0x0, 0x30010000, LL_MPU_REGION_SIZE_128KB|LL_MPU_TEX_LEVEL1|LL_MPU_REGION_FULL_ACCESS|LL_MPU_INSTRUCTION_ACCESS_DISABLE|LL_MPU_ACCESS_NOT_SHAREABLE|LL_MPU_ACCESS_NOT_CACHEABLE|LL_MPU_ACCESS_NOT_BUFFERABLE);
+  LL_MPU_ConfigRegion(LL_MPU_REGION_NUMBER2, 0x0, 0x30000000, LL_MPU_REGION_SIZE_128KB|LL_MPU_TEX_LEVEL1|LL_MPU_REGION_FULL_ACCESS|LL_MPU_INSTRUCTION_ACCESS_DISABLE|LL_MPU_ACCESS_NOT_SHAREABLE|LL_MPU_ACCESS_NOT_CACHEABLE|LL_MPU_ACCESS_NOT_BUFFERABLE);
   /* Enables the MPU */
   LL_MPU_Enable(LL_MPU_CTRL_PRIVILEGED_DEFAULT);
 
@@ -2725,7 +2760,7 @@ void MPU_Config(void)
 
 /**
   * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM16 interrupt took place, inside
+  * @note   This function is called  when TIM6 interrupt took place, inside
   * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
   * a global variable "uwTick" used as application time base.
   * @param  htim : TIM handle
@@ -2736,7 +2771,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM16)
+  if (htim->Instance == TIM6)
   {
     HAL_IncTick();
   }

@@ -206,10 +206,12 @@ SECTIONS
   .lwip :
   {
     . = ABSOLUTE(0x30000000);
+    *(.lwip_heap)
+    . = ABSOLUTE(0x30020000);
     *(.RxDecripSection)
-    . = ABSOLUTE(0x30000100);
+    . = ABSOLUTE(0x30020100);
     *(.TxDecripSection)
-    . = ABSOLUTE(0x30000200);
+    . = ABSOLUTE(0x30020200);
     *(.Rx_PoolSection)
   } >RAM_D2 AT> FLASH
 
