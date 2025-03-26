@@ -119,14 +119,17 @@ uint32_t get_random_number(void);
 #define ENCA_MOTOR1_GPIO_Port GPIOA
 #define FAULT_MOTOR1_Pin LL_GPIO_PIN_15
 #define FAULT_MOTOR1_GPIO_Port GPIOC
+#define FAULT_MOTOR1_EXTI_IRQn EXTI15_10_IRQn
 #define IMU_INT2_Pin LL_GPIO_PIN_3
 #define IMU_INT2_GPIO_Port GPIOE
+#define IMU_INT2_EXTI_IRQn EXTI3_IRQn
 #define FSYNC1_Pin LL_GPIO_PIN_6
 #define FSYNC1_GPIO_Port GPIOB
 #define TX_BLE_Pin LL_GPIO_PIN_5
 #define TX_BLE_GPIO_Port GPIOD
 #define EXT_RTC_INT_Pin LL_GPIO_PIN_4
 #define EXT_RTC_INT_GPIO_Port GPIOE
+#define EXT_RTC_INT_EXTI_IRQn EXTI4_IRQn
 #define ENCB_MOTOR3_Pin LL_GPIO_PIN_1
 #define ENCB_MOTOR3_GPIO_Port GPIOE
 #define ENCB_MOTOR2_Pin LL_GPIO_PIN_5
@@ -143,6 +146,7 @@ uint32_t get_random_number(void);
 #define PWM_BUZZER_GPIO_Port GPIOE
 #define BUTTON_Pin LL_GPIO_PIN_0
 #define BUTTON_GPIO_Port GPIOE
+#define BUTTON_EXTI_IRQn EXTI0_IRQn
 #define OLED_DC_Pin LL_GPIO_PIN_4
 #define OLED_DC_GPIO_Port GPIOD
 #define PWM_MOTOR1_Pin LL_GPIO_PIN_8
@@ -165,6 +169,7 @@ uint32_t get_random_number(void);
 #define SPI_CS_IMU_GPIO_Port GPIOA
 #define FAULT_MOTOR3_Pin LL_GPIO_PIN_2
 #define FAULT_MOTOR3_GPIO_Port GPIOB
+#define FAULT_MOTOR3_EXTI_IRQn EXTI2_IRQn
 #define CTRL_MOTOR4_Pin LL_GPIO_PIN_10
 #define CTRL_MOTOR4_GPIO_Port GPIOE
 #define PWM_MOTOR4_Pin LL_GPIO_PIN_14
@@ -185,6 +190,7 @@ uint32_t get_random_number(void);
 #define STROBE1_GPIO_Port GPIOD
 #define IMU_INT1_Pin LL_GPIO_PIN_10
 #define IMU_INT1_GPIO_Port GPIOD
+#define IMU_INT1_EXTI_IRQn EXTI15_10_IRQn
 #define PWM_SERVO3_Pin LL_GPIO_PIN_14
 #define PWM_SERVO3_GPIO_Port GPIOB
 #define ENCA_MOTOR2_Pin LL_GPIO_PIN_6
@@ -195,6 +201,7 @@ uint32_t get_random_number(void);
 #define CTRL_MOTOR2_GPIO_Port GPIOE
 #define FAULT_MOTOR2_Pin LL_GPIO_PIN_12
 #define FAULT_MOTOR2_GPIO_Port GPIOE
+#define FAULT_MOTOR2_EXTI_IRQn EXTI15_10_IRQn
 #define ENCA_MOTOR4_Pin LL_GPIO_PIN_10
 #define ENCA_MOTOR4_GPIO_Port GPIOB
 #define SBUS_RX_Pin LL_GPIO_PIN_9

@@ -273,6 +273,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Drivers/BSP/Components/oled/oled.c
     Drivers/BSP/Components/rx8900ce/rx8900ce.c
     Drivers/BSP/Components/ws2812b/ws2812b.c
+    Drivers/BSP/Components/buzzer/buzzer.c
 
     Middlewares/Third_Party/cringbuf/src/cringbuf.c
     Middlewares/Third_Party/lwbtn/src/lwbtn.c
@@ -468,6 +469,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Drivers/BSP/Components/icm42688p
     Drivers/BSP/Components/drv8874
     Drivers/BSP/Components/battery
+    Drivers/BSP/Components/buzzer
 
     Middlewares/Third_Party/FreeRTOS/Source/include
     Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS

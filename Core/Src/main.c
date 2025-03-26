@@ -31,6 +31,7 @@
 #include "oled.h"
 #include "rx8900ce.h"
 #include "ws2812b.h"
+#include "buzzer.h"
 #include "FreeRTOS_CLI.h"
 /* USER CODE END Includes */
 
@@ -206,11 +207,11 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of startup_task */
-  osThreadDef(startup_task, startup, osPriorityNormal, 0, 128);
+  osThreadDef(startup_task, startup, osPriorityNormal, 0, 1024);
   startup_taskHandle = osThreadCreate(osThread(startup_task), NULL);
 
   /* definition and creation of cmd_process_task */
-  osThreadDef(cmd_process_task, cmd_process, osPriorityNormal, 0, 128);
+  osThreadDef(cmd_process_task, cmd_process, osPriorityNormal, 0, 256);
   cmd_process_taskHandle = osThreadCreate(osThread(cmd_process_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -1632,13 +1633,13 @@ static void MX_TIM15_Init(void)
   /* USER CODE BEGIN TIM15_Init 1 */
 
   /* USER CODE END TIM15_Init 1 */
-  TIM_InitStruct.Prescaler = 11;
+  TIM_InitStruct.Prescaler = 239;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-  TIM_InitStruct.Autoreload = 9999;
+  TIM_InitStruct.Autoreload = 65535;
   TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
   TIM_InitStruct.RepetitionCounter = 0;
   LL_TIM_Init(TIM15, &TIM_InitStruct);
-  LL_TIM_DisableARRPreload(TIM15);
+  LL_TIM_EnableARRPreload(TIM15);
   LL_TIM_SetClockSource(TIM15, LL_TIM_CLOCKSOURCE_INTERNAL);
   LL_TIM_OC_EnablePreload(TIM15, LL_TIM_CHANNEL_CH1);
   TIM_OC_InitStruct.OCMode = LL_TIM_OCMODE_PWM1;
@@ -1699,6 +1700,27 @@ static void MX_TIM17_Init(void)
 
   /* Peripheral clock enable */
   LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM17);
+
+  /* TIM17 DMA Init */
+
+  /* TIM17_CH1 Init */
+  LL_DMA_SetPeriphRequest(DMA2, LL_DMA_STREAM_4, LL_DMAMUX1_REQ_TIM17_CH1);
+
+  LL_DMA_SetDataTransferDirection(DMA2, LL_DMA_STREAM_4, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
+
+  LL_DMA_SetStreamPriorityLevel(DMA2, LL_DMA_STREAM_4, LL_DMA_PRIORITY_LOW);
+
+  LL_DMA_SetMode(DMA2, LL_DMA_STREAM_4, LL_DMA_MODE_NORMAL);
+
+  LL_DMA_SetPeriphIncMode(DMA2, LL_DMA_STREAM_4, LL_DMA_PERIPH_NOINCREMENT);
+
+  LL_DMA_SetMemoryIncMode(DMA2, LL_DMA_STREAM_4, LL_DMA_MEMORY_INCREMENT);
+
+  LL_DMA_SetPeriphSize(DMA2, LL_DMA_STREAM_4, LL_DMA_PDATAALIGN_HALFWORD);
+
+  LL_DMA_SetMemorySize(DMA2, LL_DMA_STREAM_4, LL_DMA_MDATAALIGN_HALFWORD);
+
+  LL_DMA_DisableFifoMode(DMA2, LL_DMA_STREAM_4);
 
   /* USER CODE BEGIN TIM17_Init 1 */
 
@@ -2315,6 +2337,9 @@ static void MX_DMA_Init(void)
   /* DMA2_Stream3_IRQn interrupt configuration */
   NVIC_SetPriority(DMA2_Stream3_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
   NVIC_EnableIRQ(DMA2_Stream3_IRQn);
+  /* DMA2_Stream4_IRQn interrupt configuration */
+  NVIC_SetPriority(DMA2_Stream4_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
+  NVIC_EnableIRQ(DMA2_Stream4_IRQn);
 
 }
 
@@ -2526,6 +2551,18 @@ static void MX_GPIO_Init(void)
   /**/
   LL_GPIO_SetPinMode(FAULT_MOTOR2_GPIO_Port, FAULT_MOTOR2_Pin, LL_GPIO_MODE_INPUT);
 
+  /* EXTI interrupt init*/
+  NVIC_SetPriority(EXTI0_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
+  NVIC_EnableIRQ(EXTI0_IRQn);
+  NVIC_SetPriority(EXTI2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
+  NVIC_EnableIRQ(EXTI2_IRQn);
+  NVIC_SetPriority(EXTI3_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
+  NVIC_EnableIRQ(EXTI3_IRQn);
+  NVIC_SetPriority(EXTI4_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
+  NVIC_EnableIRQ(EXTI4_IRQn);
+  NVIC_SetPriority(EXTI15_10_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
+  NVIC_EnableIRQ(EXTI15_10_IRQn);
+
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
   /* USER CODE END MX_GPIO_Init_2 */
@@ -2675,10 +2712,23 @@ void startup(void const * argument)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
   drv8874_init();
+  ws2812b_init();
+
+  ws2812b_set_color(0, 255, 255, 255);
+  ws2812b_set_color(1, 100, 0, 0);
+  ws2812b_set_color(2, 0, 100, 0);
+  ws2812b_set_color(3, 0, 0, 100);
+  ws2812b_flush();
+
+  buzzer_set_frequency(500);
+  buzzer_on();
+  vTaskDelay(pdMS_TO_TICKS(200));
+  buzzer_off();
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    LL_IWDG_ReloadCounter(IWDG1);
   }
   /* USER CODE END 5 */
 }
