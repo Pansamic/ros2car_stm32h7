@@ -92,7 +92,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     USB_DEVICE/Target/usbd_conf.c
     USB_DEVICE/App/usb_device.c
     USB_DEVICE/App/usbd_desc.c
-    USB_DEVICE/App/usbd_storage_if.c
+    USB_DEVICE/App/usbd_cdc_if.c
     LWIP/Target/ethernetif.c
     LWIP/App/lwip.c
     FATFS/Target/bsp_driver_sd.c
@@ -159,10 +159,13 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c
     Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c
     Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c
-    Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc.c
-    Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_bot.c
-    Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_data.c
-    Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c
+    Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c
+    # Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc.c
+    # Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_bot.c
+    # Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_data.c
+    # Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/usbd_msc_scsi.c
+    # Middlewares/ST/STM32_USB_Device_Library/Class/DFU/Src/usbd_dfu_media_template.c
+    # Middlewares/ST/STM32_USB_Device_Library/Class/DFU/Src/usbd_dfu.c
 
     Middlewares/Third_Party/FreeRTOS/Source/croutine.c
     Middlewares/Third_Party/FreeRTOS/Source/event_groups.c
@@ -174,6 +177,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS/cmsis_os.c
     Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c
     Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c
+    Middlewares/Third_Party/FreeRTOS/Source/FreeRTOS_CLI.c
 
     Middlewares/Third_Party/LwIP/src/netif/ppp/auth.c
     Middlewares/Third_Party/LwIP/src/netif/ppp/ccp.c
@@ -471,7 +475,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Middlewares/Third_Party/FatFs/src
 
     Middlewares/ST/STM32_USB_Device_Library/Core/Inc
-    Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Inc
+    Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
 
     Middlewares/Third_Party/LwIP/src/include
     Middlewares/Third_Party/LwIP/system

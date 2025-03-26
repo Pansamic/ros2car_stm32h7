@@ -52,7 +52,8 @@
 
 SD_HandleTypeDef hsd1;
 
-osThreadId defaultTaskHandle;
+osThreadId startup_taskHandle;
+osThreadId cmd_process_taskHandle;
 /* USER CODE BEGIN PV */
 uart_t uart1_cb;
 uart_t uart2_cb;
@@ -91,7 +92,8 @@ static void MX_RNG_Init(void);
 static void MX_TIM17_Init(void);
 static void MX_IWDG1_Init(void);
 static void MX_TIM13_Init(void);
-void StartDefaultTask(void const * argument);
+void startup(void const * argument);
+void cmd_process(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -202,9 +204,13 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+  /* definition and creation of startup_task */
+  osThreadDef(startup_task, startup, osPriorityNormal, 0, 128);
+  startup_taskHandle = osThreadCreate(osThread(startup_task), NULL);
+
+  /* definition and creation of cmd_process_task */
+  osThreadDef(cmd_process_task, cmd_process, osPriorityNormal, 0, 128);
+  cmd_process_taskHandle = osThreadCreate(osThread(cmd_process_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -2618,14 +2624,14 @@ int uart_read(uart_t* pcb, void* pdata, size_t length, size_t* read_length)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartDefaultTask */
+/* USER CODE BEGIN Header_startup */
 /**
-  * @brief  Function implementing the defaultTask thread.
+  * @brief  Function implementing the startup_task thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void const * argument)
+/* USER CODE END Header_startup */
+void startup(void const * argument)
 {
   /* init code for LWIP */
   MX_LWIP_Init();
@@ -2640,6 +2646,57 @@ void StartDefaultTask(void const * argument)
     osDelay(1);
   }
   /* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_cmd_process */
+/**
+* @brief Function implementing the cmd_process_task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_cmd_process */
+void cmd_process(void const * argument)
+{
+  /* USER CODE BEGIN cmd_process */
+  /* offset of the delimeter '\n' in debug UART receipt ring buffer */
+  size_t delimeter_offset = 0;
+
+  /* FreeRTOS command line interface internal buffer */
+  int8_t* freertos_cli_write_buf = FreeRTOS_CLIGetOutputBuffer();
+
+  /* A continuous memory buffer to process command and its parameters. */
+  char command_str[64] = {0};
+
+  for(;;)
+  {
+    vTaskDelay(100);
+    /* Find delimeter '\n' in debug UART receipt buffer. */
+    if (ringbuf_find_byte(&uart1_cb.rx_ringbuf, '\n', &delimeter_offset) != RINGBUF_OK)
+    {
+      /* If delimeter '\n' not found, continue processing loop. */
+      continue;
+    }
+    /* If delimeter '\n' is found in debug UART receipt buffer,
+     * move the command line string to continous memory buffer to process. */
+    size_t read_len = 0;
+    memset(command_str, 0, sizeof(command_str));
+    if (ringbuf_get_block(&uart1_cb.rx_ringbuf, command_str, delimeter_offset + 1, &read_len) != RINGBUF_OK)
+    {
+      /* If failed to get command line string, continue processing loop. */
+      LOG_ERROR("Failed to get command line string from UART1 ring buffer.");
+      continue;
+    }
+    /* Process command line string. */
+    if (FreeRTOS_CLIProcessCommand(command_str, freertos_cli_write_buf, configCOMMAND_INT_MAX_OUTPUT_SIZE) == pdFALSE)
+    {
+      /* If failed to process command line string, continue processing loop. */
+      LOG_ERROR("Failed to process command line string.");
+      continue;
+    }
+    /* Send processed command line string to debug UART transmission buffer. */
+    uart_send(&uart1_cb, freertos_cli_write_buf, strlen((char*)freertos_cli_write_buf));
+  }
+  /* USER CODE END cmd_process */
 }
 
  /* MPU Configuration */

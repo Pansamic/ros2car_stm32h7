@@ -12,6 +12,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "timers.h"
+#include "FreeRTOS_CLI.h"
+#include "lwprintf.h"
 #include "drv8874.h"
 
 #ifdef cplusplus
@@ -22,7 +24,20 @@ extern "C" {
 drv8874_t motors[4];
 
 /* FreeRTOS timer handle for motor control loop timer */
-xTimerHandle motor_control_timer;
+static xTimerHandle motor_control_timer;
+
+
+static void drv8874_update_timer(TimerHandle_t xTimer);
+static drv8874_err_t drv8874_init_adc(void);
+static portBASE_TYPE drv8874_control_command(int8_t * write_buffer, size_t write_buffer_len, const int8_t * command_string);
+
+static const CLI_Command_Definition_t drv8874_control_command_def =
+{
+    ( const int8_t * const ) "drv8874", /* The command string to type. */
+    ( const int8_t * const ) "drv8874 <ID> <mode> <target value>:\r\nSet DRV8874 motor control mode and parameters.\r\n\r\n",
+    drv8874_control_command, /* The function to run. */
+    -1 /* No parameters are expected. */
+};
 
 /**
  * @brief FreeRTOS timer task function for motor control loop.
@@ -50,6 +65,73 @@ static drv8874_err_t drv8874_init_adc(void)
     return DRV8874_OK;
 }
 
+static portBASE_TYPE drv8874_control_command(int8_t * write_buffer, size_t write_buffer_len, const int8_t * command_string)
+{
+    int8_t *parameter_string;
+    portBASE_TYPE parameter_string_length;
+    int32_t motor_id;
+    float target_value;
+    drv8874_t *motor;
+    char mode[16];
+
+    // Parse motor ID
+    parameter_string = (int8_t *) FreeRTOS_CLIGetParameter(command_string, 1, &parameter_string_length);
+    if (parameter_string == NULL)
+    {
+        write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Missing motor ID.\r\n");
+        return pdFALSE;
+    }
+    motor_id = atoi((const char *) parameter_string);
+    if (motor_id < 1 || motor_id > 4)
+    {
+        write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Invalid motor ID. Must be between 1 and 4.\r\n");
+        return pdFALSE;
+    }
+    motor = &motors[motor_id - 1];
+
+    // Parse mode
+    parameter_string = (int8_t *) FreeRTOS_CLIGetParameter(command_string, 2, &parameter_string_length);
+    if (parameter_string == NULL)
+    {
+        write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Missing mode.\r\n");
+        return pdFALSE;
+    }
+    strncpy(mode, (const char *) parameter_string, parameter_string_length);
+    mode[parameter_string_length] = '\0';
+
+    // Parse target value
+    parameter_string = (int8_t *) FreeRTOS_CLIGetParameter(command_string, 3, &parameter_string_length);
+    if (parameter_string == NULL)
+    {
+        write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Missing target value.\r\n");
+        return pdFALSE;
+    }
+    target_value = atof((const char *) parameter_string);
+
+    // Set motor control mode and target value
+    if (strcmp(mode, "position") == 0)
+    {
+        drv8874_set_position_control(motor, motor->kp_pos, motor->kd_pos);
+        drv8874_set_position(motor, target_value);
+    }
+    else if (strcmp(mode, "velocity") == 0)
+    {
+        drv8874_set_velecity_control(motor, motor->kp_vel, motor->kd_vel);
+        drv8874_set_velocity(motor, target_value);
+    }
+    else if (strcmp(mode, "torque") == 0)
+    {
+        drv8874_set_torque_control(motor, motor->kp_torq, motor->kd_torq);
+        drv8874_set_torque(motor, target_value);
+    }
+    else
+    {
+        write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Invalid mode. Use 'position', 'velocity', or 'torque'.\r\n");
+        return pdFALSE;
+    }
+
+    return pdTRUE;
+}
 
 drv8874_err_t drv8874_init()
 {
@@ -175,7 +257,7 @@ drv8874_err_t drv8874_init()
 
     /* Create FreeRTOS timer to handle motor control calculation. */
     motor_control_timer = xTimerCreate("motor_control", pdMS_TO_TICKS(10), pdTRUE, NULL, drv8874_update_timer);
-
+    FreeRTOS_CLIRegisterCommand(&drv8874_control_command_def);
     return DRV8874_OK;
 }
 drv8874_err_t drv8874_set_position_control(drv8874_t *dev, float kp, float kd)
@@ -413,7 +495,6 @@ drv8874_err_t drv8874_update_control(drv8874_t *dev)
     }
     return err;
 }
-
 
 #ifdef cplusplus
 }
