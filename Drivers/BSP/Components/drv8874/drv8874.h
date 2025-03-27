@@ -21,6 +21,8 @@
 #define DRV8874_LOG_DEBUG(...)     LOG_DEBUG(__VA_ARGS__)
 #define DRV8874_LOG_TRACE(...)     LOG_TRACE(__VA_ARGS__)
 
+#define DRV8874_MOTOR_AMOUNT 4
+
 /* User can change the float precision by changing the following line. */
 typedef float drv8874_float_t;
 
@@ -37,9 +39,7 @@ typedef enum drv8874_direction_t{
 typedef enum drv8874_mode_t{
     DRV8874_MODE_POSITION = 0,
     DRV8874_MODE_VELOCITY = 1,
-    DRV8874_MODE_TORQUE = 2,
-    DRV8874_MODE_TORQUE_POSITION = 3,
-    DRV8874_MODE_TORQUE_VELOCITY = 4
+    DRV8874_MODE_TORQUE = 2
 }drv8874_mode_t;
 
 typedef struct drv8874_t{
@@ -58,6 +58,23 @@ typedef struct drv8874_t{
     /* 1 indicates reverse encoder value */
     uint8_t reverse_encoder;
 
+    /* Motor torque coefficient */
+    drv8874_float_t torque_coefficient;
+
+    /* Motor turndown ratio */
+    uint16_t turndown_ratio;
+
+    /* Number of pulses when the encoder rotates one round, 
+     * not the number of pulses when the shaft rotates one round. */
+    uint32_t encoder_round_count;
+
+    /* A proximate value of max velocity of motor, unit: rad/s.
+     * Calculate feed forward with this parameter and `pwm_tim_autoreload`. */
+    drv8874_float_t max_velocity;
+
+    /* External resistor value, unit: ohm */
+    uint32_t ext_resistor;
+
     /* DRV8874 PH pin. 1 is forward, 0 is reverse */
     GPIO_TypeDef* ctrl_gpio_port;
     uint32_t ctrl_gpio_pin;
@@ -75,40 +92,32 @@ typedef struct drv8874_t{
     int32_t encoder_count;
     int32_t previous_encoder_count;
 
-    /* Number of pulses when the encoder rotates one round, 
-     * not the number of pulses when the shaft rotates one round. */
-    uint32_t encoder_round_count;
-
     /* Time of previous control updating */
     drv8874_float_t last_update_time;
 
-    /* Motor torque coefficient */
-    drv8874_float_t torque_coefficient;
-
-    /* Motor turndown ratio */
-    uint16_t turndown_ratio;
-
-    /* A proximate value of max velocity of motor, unit: rad/s.
-     * Calculate feed forward with this parameter and `pwm_tim_autoreload`. */
-    drv8874_float_t max_velocity;
-
     /* Position PD control parameters */
     drv8874_float_t kp_pos;
+    drv8874_float_t ki_pos;
     drv8874_float_t kd_pos;
+    drv8874_float_t integral_error_pos;
     drv8874_float_t prev_error_pos;
     drv8874_float_t error_pos;
     drv8874_float_t control_pos;
 
-    /* Velocity PD control parameters */
+    /* Velocity PI control parameters */
     drv8874_float_t kp_vel;
+    drv8874_float_t ki_vel;
     drv8874_float_t kd_vel;
+    drv8874_float_t integral_error_vel;
     drv8874_float_t prev_error_vel;
     drv8874_float_t error_vel;
     drv8874_float_t control_vel;
 
-    /* Torque PD control parameters */
+    /* Torque PI control parameters */
     drv8874_float_t kp_torq;
+    drv8874_float_t ki_torq;
     drv8874_float_t kd_torq;
+    drv8874_float_t integral_error_torq;
     drv8874_float_t prev_error_torq;
     drv8874_float_t error_torq;
     drv8874_float_t control_torq;
@@ -142,47 +151,23 @@ drv8874_err_t drv8874_init();
  * @brief Set motor to position control mode.
  * 
  * @param dev Pointer to DRV8874 driver instance.
- * @param kp Kp value of PD position controller.
- * @param kd Kd value of PD position controller.
  * @return drv8874_err_t 
  */
-drv8874_err_t drv8874_set_position_control(drv8874_t *dev, drv8874_float_t kp, drv8874_float_t kd);
+drv8874_err_t drv8874_set_position_mode(drv8874_t *dev);
 /**
  * @brief Set motor to velocity control mode.
  * 
  * @param dev Pointer to DRV8874 driver instance.
- * @param kp Kp value of PD velocity controller.
- * @param kd Kd value of PD velocity controller.
  * @return drv8874_err_t 
  */
-drv8874_err_t drv8874_set_velocity_control(drv8874_t *dev, drv8874_float_t kp, drv8874_float_t kd);
+drv8874_err_t drv8874_set_velocity_mode(drv8874_t *dev);
 /**
  * @brief Set motor to torque control mode.
  * 
  * @param dev Pointer to DRV8874 driver instance.
- * @param kp Kp value of PD torque controller.
- * @param kd Kd value of PD torque controller.
  * @return drv8874_err_t 
  */
-drv8874_err_t drv8874_set_torque_control(drv8874_t *dev, drv8874_float_t kp, drv8874_float_t kd);
-/**
- * @brief Set motor to torque-position control mode.
- * 
- * @param dev Pointer to DRV8874 driver instance.
- * @param kp Kp value of PD position controller.
- * @param kd Kd value of PD position controller.
- * @return drv8874_err_t 
- */
-drv8874_err_t drv8874_set_torque_position_control(drv8874_t *dev, drv8874_float_t kp, drv8874_float_t kd);
-/**
- * @brief Set motor to torque-velocity control mode.
- * 
- * @param dev Pointer to DRV8874 driver instance.
- * @param kp Kp value of PD velocity controller.
- * @param kd Kd value of PD velocity controller.
- * @return drv8874_err_t 
- */
-drv8874_err_t drv8874_set_torque_velocity_control(drv8874_t *dev, drv8874_float_t kp, drv8874_float_t kd);
+drv8874_err_t drv8874_set_torque_mode(drv8874_t *dev);
 /**
  * @brief Set target position for the motor.
  * 
@@ -212,6 +197,8 @@ drv8874_err_t drv8874_set_torque(drv8874_t *dev, drv8874_float_t torque);
  * 
  * @param dev Pointer to DRV8874 driver instance.
  * @param direction Desired direction of rotation (forward or backward).
+ *     @ref DRV8874_DIRECTION_FORWARD
+ *     @ref DRV8874_DIRECTION_BACKWARD
  * @return drv8874_err_t 
  */
 drv8874_err_t drv8874_set_direction(drv8874_t *dev, drv8874_direction_t direction);
@@ -236,5 +223,7 @@ drv8874_err_t drv8874_brake(drv8874_t *dev);
  * @return drv8874_err_t 
  */
 drv8874_err_t drv8874_stop(drv8874_t *dev);
-
+drv8874_err_t drv8874_set_torque_ctrl_param(drv8874_t *dev, drv8874_float_t kp, drv8874_float_t ki);
+drv8874_err_t drv8874_set_velocity_ctrl_param(drv8874_t *dev, drv8874_float_t kp, drv8874_float_t ki);
+drv8874_err_t drv8874_set_position_ctrl_param(drv8874_t *dev, drv8874_float_t kp, drv8874_float_t kd);
 #endif // __DRV8874_H__

@@ -89,7 +89,6 @@ static void MX_USART3_UART_Init(void);
 static void MX_LPTIM1_Init(void);
 static void MX_LPTIM2_Init(void);
 static void MX_ADC3_Init(void);
-static void MX_LPTIM3_Init(void);
 static void MX_TIM5_Init(void);
 static void MX_RNG_Init(void);
 static void MX_TIM17_Init(void);
@@ -179,7 +178,6 @@ int main(void)
   MX_LPTIM1_Init();
   MX_LPTIM2_Init();
   MX_ADC3_Init();
-  MX_LPTIM3_Init();
   MX_TIM5_Init();
   MX_RNG_Init();
   MX_TIM17_Init();
@@ -421,17 +419,16 @@ static void MX_ADC1_Init(void)
   ADC_InitStruct.Resolution = LL_ADC_RESOLUTION_16B;
   ADC_InitStruct.LowPowerMode = LL_ADC_LP_MODE_NONE;
   LL_ADC_Init(ADC1, &ADC_InitStruct);
-  ADC_REG_InitStruct.TriggerSource = LL_ADC_REG_TRIG_EXT_LPTIM3_OUT;
+  ADC_REG_InitStruct.TriggerSource = LL_ADC_REG_TRIG_SOFTWARE;
   ADC_REG_InitStruct.SequencerLength = LL_ADC_REG_SEQ_SCAN_ENABLE_4RANKS;
   ADC_REG_InitStruct.SequencerDiscont = DISABLE;
-  ADC_REG_InitStruct.ContinuousMode = LL_ADC_REG_CONV_SINGLE;
-  ADC_REG_InitStruct.Overrun = LL_ADC_REG_OVR_DATA_PRESERVED;
+  ADC_REG_InitStruct.ContinuousMode = LL_ADC_REG_CONV_CONTINUOUS;
+  ADC_REG_InitStruct.Overrun = LL_ADC_REG_OVR_DATA_OVERWRITTEN;
   LL_ADC_REG_Init(ADC1, &ADC_REG_InitStruct);
   LL_ADC_REG_SetDataTransferMode(ADC1, LL_ADC_REG_DMA_TRANSFER_UNLIMITED);
   ADC_CommonInitStruct.CommonClock = LL_ADC_CLOCK_ASYNC_DIV1;
   ADC_CommonInitStruct.Multimode = LL_ADC_MULTI_INDEPENDENT;
   LL_ADC_CommonInit(__LL_ADC_COMMON_INSTANCE(ADC1), &ADC_CommonInitStruct);
-  LL_ADC_REG_SetTriggerEdge(ADC1, LL_ADC_REG_TRIG_EXT_RISING);
 
   /* Disable ADC deep power down (enabled by default after reset state) */
   LL_ADC_DisableDeepPowerDown(ADC1);
@@ -525,7 +522,13 @@ static void MX_ADC3_Init(void)
 
   LL_DMA_SetMemorySize(DMA2, LL_DMA_STREAM_3, LL_DMA_MDATAALIGN_HALFWORD);
 
-  LL_DMA_DisableFifoMode(DMA2, LL_DMA_STREAM_3);
+  LL_DMA_EnableFifoMode(DMA2, LL_DMA_STREAM_3);
+
+  LL_DMA_SetFIFOThreshold(DMA2, LL_DMA_STREAM_3, LL_DMA_FIFOTHRESHOLD_FULL);
+
+  LL_DMA_SetMemoryBurstxfer(DMA2, LL_DMA_STREAM_3, LL_DMA_MBURST_SINGLE);
+
+  LL_DMA_SetPeriphBurstxfer(DMA2, LL_DMA_STREAM_3, LL_DMA_PBURST_SINGLE);
 
   /* USER CODE BEGIN ADC3_Init 1 */
 
@@ -537,16 +540,15 @@ static void MX_ADC3_Init(void)
   ADC_InitStruct.Resolution = LL_ADC_RESOLUTION_16B;
   ADC_InitStruct.LowPowerMode = LL_ADC_LP_MODE_NONE;
   LL_ADC_Init(ADC3, &ADC_InitStruct);
-  ADC_REG_InitStruct.TriggerSource = LL_ADC_REG_TRIG_EXT_LPTIM3_OUT;
+  ADC_REG_InitStruct.TriggerSource = LL_ADC_REG_TRIG_SOFTWARE;
   ADC_REG_InitStruct.SequencerLength = LL_ADC_REG_SEQ_SCAN_DISABLE;
   ADC_REG_InitStruct.SequencerDiscont = DISABLE;
-  ADC_REG_InitStruct.ContinuousMode = LL_ADC_REG_CONV_SINGLE;
-  ADC_REG_InitStruct.Overrun = LL_ADC_REG_OVR_DATA_PRESERVED;
+  ADC_REG_InitStruct.ContinuousMode = LL_ADC_REG_CONV_CONTINUOUS;
+  ADC_REG_InitStruct.Overrun = LL_ADC_REG_OVR_DATA_OVERWRITTEN;
   LL_ADC_REG_Init(ADC3, &ADC_REG_InitStruct);
   LL_ADC_REG_SetDataTransferMode(ADC3, LL_ADC_REG_DMA_TRANSFER_UNLIMITED);
   ADC_CommonInitStruct.Multimode = LL_ADC_MULTI_INDEPENDENT;
   LL_ADC_CommonInit(__LL_ADC_COMMON_INSTANCE(ADC3), &ADC_CommonInitStruct);
-  LL_ADC_REG_SetTriggerEdge(ADC3, LL_ADC_REG_TRIG_EXT_RISING);
 
   /* Disable ADC deep power down (enabled by default after reset state) */
   LL_ADC_DisableDeepPowerDown(ADC3);
@@ -809,39 +811,6 @@ static void MX_LPTIM2_Init(void)
   /* USER CODE BEGIN LPTIM2_Init 2 */
 
   /* USER CODE END LPTIM2_Init 2 */
-
-}
-
-/**
-  * @brief LPTIM3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_LPTIM3_Init(void)
-{
-
-  /* USER CODE BEGIN LPTIM3_Init 0 */
-
-  /* USER CODE END LPTIM3_Init 0 */
-
-  LL_RCC_SetLPTIMClockSource(LL_RCC_LPTIM345_CLKSOURCE_PCLK4);
-
-  /* Peripheral clock enable */
-  LL_APB4_GRP1_EnableClock(LL_APB4_GRP1_PERIPH_LPTIM3);
-
-  /* USER CODE BEGIN LPTIM3_Init 1 */
-
-  /* USER CODE END LPTIM3_Init 1 */
-  LL_LPTIM_SetClockSource(LPTIM3, LL_LPTIM_CLK_SOURCE_INTERNAL);
-  LL_LPTIM_SetPrescaler(LPTIM3, LL_LPTIM_PRESCALER_DIV1);
-  LL_LPTIM_SetPolarity(LPTIM3, LL_LPTIM_OUTPUT_POLARITY_REGULAR);
-  LL_LPTIM_SetUpdateMode(LPTIM3, LL_LPTIM_UPDATE_MODE_IMMEDIATE);
-  LL_LPTIM_SetCounterMode(LPTIM3, LL_LPTIM_COUNTER_MODE_INTERNAL);
-  LL_LPTIM_TrigSw(LPTIM3);
-  LL_LPTIM_SetInput1Src(LPTIM3, LL_LPTIM_INPUT1_SRC_GPIO);
-  /* USER CODE BEGIN LPTIM3_Init 2 */
-
-  /* USER CODE END LPTIM3_Init 2 */
 
 }
 
@@ -1995,7 +1964,7 @@ static void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 1 */
   USART_InitStruct.PrescalerValue = LL_USART_PRESCALER_DIV1;
-  USART_InitStruct.BaudRate = 921600;
+  USART_InitStruct.BaudRate = 1500000;
   USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
   USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
   USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -2381,9 +2350,6 @@ static void MX_DMA_Init(void)
   /* DMA2_Stream2_IRQn interrupt configuration */
   NVIC_SetPriority(DMA2_Stream2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
   NVIC_EnableIRQ(DMA2_Stream2_IRQn);
-  /* DMA2_Stream3_IRQn interrupt configuration */
-  NVIC_SetPriority(DMA2_Stream3_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
-  NVIC_EnableIRQ(DMA2_Stream3_IRQn);
   /* DMA2_Stream4_IRQn interrupt configuration */
   NVIC_SetPriority(DMA2_Stream4_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
   NVIC_EnableIRQ(DMA2_Stream4_IRQn);
@@ -2758,19 +2724,25 @@ void startup(void const * argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
+
+  /**
+   * @note User must ensure the parameters in `drv8874_init()` are correct,
+   * or the motor driver may be damaged. `torque_coefficient` and `encoder_round_count`
+   * are the most important parameters for different DC motors.
+   */
   drv8874_init();
-  drv8874_set_velocity_control(&motors[0], 8, 0.5);
-  drv8874_set_velocity_control(&motors[1], 5, 1);
-  drv8874_set_velocity_control(&motors[2], 5, 1);
-  drv8874_set_velocity_control(&motors[3], 5, 1);
-  drv8874_set_velocity(&motors[0], 3.14159);
-  drv8874_set_velocity(&motors[1], 3.14159);
-  drv8874_set_velocity(&motors[2], 3.14159);
-  drv8874_set_velocity(&motors[3], 3.14159);
+  drv8874_set_position_mode(&motors[0]);
+  drv8874_set_position_mode(&motors[1]);
+  drv8874_set_position_mode(&motors[2]);
+  drv8874_set_position_mode(&motors[3]);
+  drv8874_set_position(&motors[0], 10*3.14159);
+  drv8874_set_position(&motors[1], 10*3.14159);
+  drv8874_set_position(&motors[2], 10*3.14159);
+  drv8874_set_position(&motors[3], 10*3.14159);
   drv8874_start(&motors[0]);
-  drv8874_start(&motors[1]);
-  drv8874_start(&motors[2]);
-  drv8874_start(&motors[3]);
+  // drv8874_start(&motors[1]);
+  // drv8874_start(&motors[2]);
+  // drv8874_start(&motors[3]);
   ws2812b_init();
 
   ws2812b_set_color(0, 255, 255, 255);

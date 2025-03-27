@@ -100,6 +100,7 @@ uint32_t get_random_number(void);
 #define MOTOR1_ENC_TIM TIM2
 #define BUZZER_TIM TIM15
 #define MOTOR_PWM_TIM TIM1
+#define ENC_TIME_TIM TIM7
 #define CAM_SYNC_TIM TIM4
 #define SERVO12_TIM TIM8
 #define MOTOR2_ENC_TIM TIM3
@@ -107,8 +108,6 @@ uint32_t get_random_number(void);
 #define SERVO34_TIM TIM12
 #define MOTOR4_ENC_TIM LPTIM2
 #define RGB_TIM TIM17
-#define ADC_TRIG_TIM LPTIM3
-#define ENC_PERIOD_TIM TIM7
 #define SPI_CS_EXT_Pin LL_GPIO_PIN_13
 #define SPI_CS_EXT_GPIO_Port GPIOC
 #define PWM_RGB_Pin LL_GPIO_PIN_9
