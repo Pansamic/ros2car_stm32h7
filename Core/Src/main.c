@@ -2724,6 +2724,7 @@ void startup(void const * argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
+  battery_init();
 
   /**
    * @note User must ensure the parameters in `drv8874_init()` are correct,

@@ -13,9 +13,11 @@
 
 #include "syslog.h"
 
+#define BATTERY_SCALE_FACTOR 10.0
+
 #define BATTERY_LOG_CRITICAL(...)   LOG_CRITICAL(__VA_ARGS__)
 #define BATTERY_LOG_ERROR(...)      LOG_ERROR(__VA_ARGS__)
-#define BATTERY_LOG_WARNING(...)    LOG_WARN(__VA_ARGS__)
+#define BATTERY_LOG_WARN(...)       LOG_WARN(__VA_ARGS__)
 #define BATTERY_LOG_INFO(...)       LOG_INFO(__VA_ARGS__)
 #define BATTERY_LOG_DEBUG(...)      LOG_DEBUG(__VA_ARGS__)
 #define BATTERY_LOG_TRACE(...)      LOG_TRACE(__VA_ARGS__)
@@ -26,6 +28,6 @@ typedef enum {
 } battery_err_t;
 
 battery_err_t battery_init(void);
-battery_err_t battery_read(float *voltage);
+float battery_read();
 
 #endif // __BATTERY_H__
