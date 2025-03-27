@@ -33,6 +33,7 @@
 #include "ws2812b.h"
 #include "buzzer.h"
 #include "FreeRTOS_CLI.h"
+#include "uxr/client/client.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -186,7 +187,11 @@ int main(void)
   MX_IWDG1_Init();
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
-
+  uart_open(&uart1_cb);
+  uart_open(&uart2_cb);
+  uart_open(&uart3_cb);
+  // while(1)
+  // LL_USART_TransmitData8(USART1, 'A');
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -1094,7 +1099,7 @@ static void MX_TIM1_Init(void)
   /* USER CODE BEGIN TIM1_Init 1 */
 
   /* USER CODE END TIM1_Init 1 */
-  TIM_InitStruct.Prescaler = 11;
+  TIM_InitStruct.Prescaler = 23;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
   TIM_InitStruct.Autoreload = 9999;
   TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
@@ -1456,7 +1461,7 @@ static void MX_TIM7_Init(void)
   /* USER CODE BEGIN TIM7_Init 1 */
 
   /* USER CODE END TIM7_Init 1 */
-  TIM_InitStruct.Prescaler = 119;
+  TIM_InitStruct.Prescaler = 239;
   TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
   TIM_InitStruct.Autoreload = 65535;
   LL_TIM_Init(TIM7, &TIM_InitStruct);
@@ -1826,7 +1831,13 @@ static void MX_UART4_Init(void)
 
   LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_6, LL_DMA_MDATAALIGN_BYTE);
 
-  LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_6);
+  LL_DMA_EnableFifoMode(DMA1, LL_DMA_STREAM_6);
+
+  LL_DMA_SetFIFOThreshold(DMA1, LL_DMA_STREAM_6, LL_DMA_FIFOTHRESHOLD_FULL);
+
+  LL_DMA_SetMemoryBurstxfer(DMA1, LL_DMA_STREAM_6, LL_DMA_MBURST_SINGLE);
+
+  LL_DMA_SetPeriphBurstxfer(DMA1, LL_DMA_STREAM_6, LL_DMA_PBURST_SINGLE);
 
   /* UART4_TX Init */
   LL_DMA_SetPeriphRequest(DMA1, LL_DMA_STREAM_7, LL_DMAMUX1_REQ_UART4_TX);
@@ -1845,7 +1856,13 @@ static void MX_UART4_Init(void)
 
   LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_7, LL_DMA_MDATAALIGN_BYTE);
 
-  LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_7);
+  LL_DMA_EnableFifoMode(DMA1, LL_DMA_STREAM_7);
+
+  LL_DMA_SetFIFOThreshold(DMA1, LL_DMA_STREAM_7, LL_DMA_FIFOTHRESHOLD_FULL);
+
+  LL_DMA_SetMemoryBurstxfer(DMA1, LL_DMA_STREAM_7, LL_DMA_MBURST_SINGLE);
+
+  LL_DMA_SetPeriphBurstxfer(DMA1, LL_DMA_STREAM_7, LL_DMA_PBURST_SINGLE);
 
   /* UART4 interrupt Init */
   NVIC_SetPriority(UART4_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
@@ -1863,7 +1880,7 @@ static void MX_UART4_Init(void)
   UART_InitStruct.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
   UART_InitStruct.OverSampling = LL_USART_OVERSAMPLING_16;
   LL_USART_Init(UART4, &UART_InitStruct);
-  LL_USART_DisableFIFO(UART4);
+  LL_USART_EnableFIFO(UART4);
   LL_USART_SetTXFIFOThreshold(UART4, LL_USART_FIFOTHRESHOLD_1_8);
   LL_USART_SetRXFIFOThreshold(UART4, LL_USART_FIFOTHRESHOLD_1_8);
   LL_USART_ConfigAsyncMode(UART4);
@@ -1937,7 +1954,13 @@ static void MX_USART1_UART_Init(void)
 
   LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_0, LL_DMA_MDATAALIGN_BYTE);
 
-  LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_0);
+  LL_DMA_EnableFifoMode(DMA1, LL_DMA_STREAM_0);
+
+  LL_DMA_SetFIFOThreshold(DMA1, LL_DMA_STREAM_0, LL_DMA_FIFOTHRESHOLD_FULL);
+
+  LL_DMA_SetMemoryBurstxfer(DMA1, LL_DMA_STREAM_0, LL_DMA_MBURST_SINGLE);
+
+  LL_DMA_SetPeriphBurstxfer(DMA1, LL_DMA_STREAM_0, LL_DMA_PBURST_SINGLE);
 
   /* USART1_TX Init */
   LL_DMA_SetPeriphRequest(DMA1, LL_DMA_STREAM_1, LL_DMAMUX1_REQ_USART1_TX);
@@ -1956,7 +1979,13 @@ static void MX_USART1_UART_Init(void)
 
   LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_1, LL_DMA_MDATAALIGN_BYTE);
 
-  LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_1);
+  LL_DMA_EnableFifoMode(DMA1, LL_DMA_STREAM_1);
+
+  LL_DMA_SetFIFOThreshold(DMA1, LL_DMA_STREAM_1, LL_DMA_FIFOTHRESHOLD_FULL);
+
+  LL_DMA_SetMemoryBurstxfer(DMA1, LL_DMA_STREAM_1, LL_DMA_MBURST_SINGLE);
+
+  LL_DMA_SetPeriphBurstxfer(DMA1, LL_DMA_STREAM_1, LL_DMA_PBURST_SINGLE);
 
   /* USART1 interrupt Init */
   NVIC_SetPriority(USART1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
@@ -1966,7 +1995,7 @@ static void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 1 */
   USART_InitStruct.PrescalerValue = LL_USART_PRESCALER_DIV1;
-  USART_InitStruct.BaudRate = 1152000;
+  USART_InitStruct.BaudRate = 921600;
   USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
   USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
   USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -1976,7 +2005,7 @@ static void MX_USART1_UART_Init(void)
   LL_USART_Init(USART1, &USART_InitStruct);
   LL_USART_SetTXFIFOThreshold(USART1, LL_USART_FIFOTHRESHOLD_1_8);
   LL_USART_SetRXFIFOThreshold(USART1, LL_USART_FIFOTHRESHOLD_1_8);
-  LL_USART_DisableFIFO(USART1);
+  LL_USART_EnableFIFO(USART1);
   LL_USART_ConfigAsyncMode(USART1);
 
   /* USER CODE BEGIN WKUPType USART1 */
@@ -2006,14 +2035,20 @@ static void MX_USART1_UART_Init(void)
   err = ringbuf_init(&uart1_cb.rx_ringbuf, uart1_cb.rx_buf, sizeof(uart1_cb.rx_buf), RINGBUF_RULE_DISCARD);
   if(err != RINGBUF_OK)
   {
-      // for(;;){}
-      LOG_ERROR("USART1 RX ringbuf init failed");
+    char error_str[] = "USART1 RX ringbuf init failed\n";
+    for(char* p=error_str; *p!='\0'; p++)
+    {
+      LL_USART_TransmitData8(USART1, *p);
+    }
   }
   err = ringbuf_init(&uart1_cb.tx_ringbuf, uart1_cb.tx_buf, sizeof(uart1_cb.tx_buf), RINGBUF_RULE_DISCARD);
   if(err != RINGBUF_OK)
   {
-      // for(;;){}
-      LOG_ERROR("USART1 TX ringbuf init failed");
+    char error_str[] = "USART1 RX ringbuf init failed\n";
+    for(char* p=error_str; *p!='\0'; p++)
+    {
+        LL_USART_TransmitData8(USART1, *p);
+    }
   }
   /* USER CODE END USART1_Init 2 */
 
@@ -2072,7 +2107,13 @@ static void MX_USART2_UART_Init(void)
 
   LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_2, LL_DMA_MDATAALIGN_BYTE);
 
-  LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_2);
+  LL_DMA_EnableFifoMode(DMA1, LL_DMA_STREAM_2);
+
+  LL_DMA_SetFIFOThreshold(DMA1, LL_DMA_STREAM_2, LL_DMA_FIFOTHRESHOLD_FULL);
+
+  LL_DMA_SetMemoryBurstxfer(DMA1, LL_DMA_STREAM_2, LL_DMA_MBURST_SINGLE);
+
+  LL_DMA_SetPeriphBurstxfer(DMA1, LL_DMA_STREAM_2, LL_DMA_PBURST_SINGLE);
 
   /* USART2_TX Init */
   LL_DMA_SetPeriphRequest(DMA1, LL_DMA_STREAM_3, LL_DMAMUX1_REQ_USART2_TX);
@@ -2091,7 +2132,13 @@ static void MX_USART2_UART_Init(void)
 
   LL_DMA_SetMemorySize(DMA1, LL_DMA_STREAM_3, LL_DMA_MDATAALIGN_BYTE);
 
-  LL_DMA_DisableFifoMode(DMA1, LL_DMA_STREAM_3);
+  LL_DMA_EnableFifoMode(DMA1, LL_DMA_STREAM_3);
+
+  LL_DMA_SetFIFOThreshold(DMA1, LL_DMA_STREAM_3, LL_DMA_FIFOTHRESHOLD_FULL);
+
+  LL_DMA_SetMemoryBurstxfer(DMA1, LL_DMA_STREAM_3, LL_DMA_MBURST_SINGLE);
+
+  LL_DMA_SetPeriphBurstxfer(DMA1, LL_DMA_STREAM_3, LL_DMA_PBURST_SINGLE);
 
   /* USART2 interrupt Init */
   NVIC_SetPriority(USART2_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),5, 0));
@@ -2101,7 +2148,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   USART_InitStruct.PrescalerValue = LL_USART_PRESCALER_DIV1;
-  USART_InitStruct.BaudRate = 1152000;
+  USART_InitStruct.BaudRate = 115200;
   USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
   USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
   USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -2111,7 +2158,7 @@ static void MX_USART2_UART_Init(void)
   LL_USART_Init(USART2, &USART_InitStruct);
   LL_USART_SetTXFIFOThreshold(USART2, LL_USART_FIFOTHRESHOLD_1_8);
   LL_USART_SetRXFIFOThreshold(USART2, LL_USART_FIFOTHRESHOLD_1_8);
-  LL_USART_DisableFIFO(USART2);
+  LL_USART_EnableFIFO(USART2);
   LL_USART_ConfigAsyncMode(USART2);
 
   /* USER CODE BEGIN WKUPType USART2 */
@@ -2246,7 +2293,7 @@ static void MX_USART3_UART_Init(void)
   LL_USART_Init(USART3, &USART_InitStruct);
   LL_USART_SetTXFIFOThreshold(USART3, LL_USART_FIFOTHRESHOLD_1_8);
   LL_USART_SetRXFIFOThreshold(USART3, LL_USART_FIFOTHRESHOLD_1_8);
-  LL_USART_DisableFIFO(USART3);
+  LL_USART_EnableFIFO(USART3);
   LL_USART_ConfigAsyncMode(USART3);
 
   /* USER CODE BEGIN WKUPType USART3 */
@@ -2712,6 +2759,18 @@ void startup(void const * argument)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
   drv8874_init();
+  drv8874_set_velocity_control(&motors[0], 8, 0.5);
+  drv8874_set_velocity_control(&motors[1], 5, 1);
+  drv8874_set_velocity_control(&motors[2], 5, 1);
+  drv8874_set_velocity_control(&motors[3], 5, 1);
+  drv8874_set_velocity(&motors[0], 3.14159);
+  drv8874_set_velocity(&motors[1], 3.14159);
+  drv8874_set_velocity(&motors[2], 3.14159);
+  drv8874_set_velocity(&motors[3], 3.14159);
+  drv8874_start(&motors[0]);
+  drv8874_start(&motors[1]);
+  drv8874_start(&motors[2]);
+  drv8874_start(&motors[3]);
   ws2812b_init();
 
   ws2812b_set_color(0, 255, 255, 255);

@@ -90,7 +90,11 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  ws2812b_set_color(0, 255, 0, 0);
+  ws2812b_set_color(1, 255, 0, 0);
+  ws2812b_set_color(2, 255, 0, 0);
+  ws2812b_set_color(3, 255, 0, 0);
+  ws2812b_flush();
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -538,13 +542,21 @@ void USART1_IRQHandler(void)
     err = ringbuf_compensate_written(&uart1_cb.rx_ringbuf, len);
     if(err != RINGBUF_OK)
     {
-      // for(;;){}
+      char error_str[] = "USART1 RX DMA error: ringbuf_compensate_written() failed\n";
+      for(char* p=error_str; *p!='\0'; p++)
+      {
+        LL_USART_TransmitData8(USART1, *p);
+      }
       LOG_ERROR("USART1 RX DMA error: ringbuf_compensate_written() failed: %d", err);
     }
     err = ringbuf_get_free_continuous_block(&uart1_cb.rx_ringbuf, &p, &len);
     if(err != RINGBUF_OK)
     {
-      // for(;;){}
+      char error_str[] = "USART1 RX DMA error: ringbuf_get_free_continuous_block() failed\n";
+      for(char* p=error_str; *p!='\0'; p++)
+      {
+        LL_USART_TransmitData8(USART1, *p);
+      }
       LOG_ERROR("USART1 RX DMA error: ringbuf_get_free_continuous_block() failed: %d", err);
     }
     LL_DMA_SetMemoryAddress(uart1_cb.dma_rx, uart1_cb.dma_rx_channel, (uint32_t)p);
@@ -639,12 +651,22 @@ void USART2_IRQHandler(void)
     err = ringbuf_compensate_written(&uart2_cb.rx_ringbuf, len);
     if(err != RINGBUF_OK)
     {
-      for(;;){}
+      char error_str[] = "USART2 RX DMA error: ringbuf_compensate_written() failed\n";
+      for(char* p=error_str; *p!='\0'; p++)
+      {
+        LL_USART_TransmitData8(USART1, *p);
+      }
+      LOG_ERROR("USART2 RX DMA error: ringbuf_compensate_written() failed: %d", err);
     }
     err = ringbuf_get_free_continuous_block(&uart2_cb.rx_ringbuf, &p, &len);
     if(err != RINGBUF_OK)
     {
-      for(;;){}
+      char error_str[] = "USART2 RX DMA error: ringbuf_get_free_continuous_block() failed\n";
+      for(char* p=error_str; *p!='\0'; p++)
+      {
+        LL_USART_TransmitData8(USART1, *p);
+      }
+      LOG_ERROR("USART2 RX DMA error: ringbuf_get_free_continuous_block() failed: %d", err);
     }
     LL_DMA_SetMemoryAddress(uart2_cb.dma_rx, uart2_cb.dma_rx_channel, (uint32_t)p);
     LL_DMA_SetDataLength(uart2_cb.dma_rx, uart2_cb.dma_rx_channel, (uint32_t)len);
@@ -736,12 +758,22 @@ void USART3_IRQHandler(void)
     err = ringbuf_compensate_written(&uart3_cb.rx_ringbuf, len);
     if(err != RINGBUF_OK)
     {
-      for(;;){}
+      char error_str[] = "USART3 RX DMA error: ringbuf_compensate_written() failed\n";
+      for(char* p=error_str; *p!='\0'; p++)
+      {
+        LL_USART_TransmitData8(USART1, *p);
+      }
+      LOG_ERROR("USART3 RX DMA error: ringbuf_compensate_written() failed: %d", err);
     }
     err = ringbuf_get_free_continuous_block(&uart3_cb.rx_ringbuf, &p, &len);
     if(err != RINGBUF_OK)
     {
-      for(;;){}
+      char error_str[] = "USART3 RX DMA error: ringbuf_get_free_continuous_block() failed\n";
+      for(char* p=error_str; *p!='\0'; p++)
+      {
+        LL_USART_TransmitData8(USART1, *p);
+      }
+      LOG_ERROR("USART3 RX DMA error: ringbuf_get_free_continuous_block() failed: %d", err);
     }
     LL_DMA_SetMemoryAddress(uart3_cb.dma_rx, uart3_cb.dma_rx_channel, (uint32_t)p);
     LL_DMA_SetDataLength(uart3_cb.dma_rx, uart3_cb.dma_rx_channel, (uint32_t)len);
@@ -907,10 +939,7 @@ void TIM7_IRQHandler(void)
   if(LL_TIM_IsActiveFlag_UPDATE(TIM7))
   {
     LL_TIM_ClearFlag_UPDATE(TIM7);
-    motors[0].interval_timer_count += 0x10000;
-    motors[1].interval_timer_count += 0x10000;
-    motors[2].interval_timer_count += 0x10000;
-    motors[3].interval_timer_count += 0x10000;
+    drv8874_timer_count += (LL_TIM_GetAutoReload(TIM7) + 1);
   }
   /* USER CODE END TIM7_IRQn 0 */
   /* USER CODE BEGIN TIM7_IRQn 1 */
