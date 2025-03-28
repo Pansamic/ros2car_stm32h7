@@ -333,7 +333,7 @@ void PeriphCommonClock_Config(void)
   LL_RCC_PLL2_Enable();
 
    /* Wait till PLL is ready */
-  while(LL_RCC_PLL2_IsReady() != 1)
+  while(LL_RCC_PLL3_IsReady() != 1)
   {
   }
 
@@ -357,7 +357,7 @@ static void MX_ADC1_Init(void)
 
   LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-  LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSOURCE_PLL2P);
+  LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSOURCE_PLL3R);
 
   /* Peripheral clock enable */
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_ADC12);
@@ -492,7 +492,7 @@ static void MX_ADC3_Init(void)
   LL_ADC_REG_InitTypeDef ADC_REG_InitStruct = {0};
   LL_ADC_CommonInitTypeDef ADC_CommonInitStruct = {0};
 
-  LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSOURCE_PLL2P);
+  LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSOURCE_PLL3R);
 
   /* Peripheral clock enable */
   LL_AHB4_GRP1_EnableClock(LL_AHB4_GRP1_PERIPH_ADC3);
@@ -536,7 +536,9 @@ static void MX_ADC3_Init(void)
 
   /** Common config
   */
-  LL_ADC_SetOverSamplingScope(ADC3, LL_ADC_OVS_DISABLE);
+  LL_ADC_SetOverSamplingScope(ADC3, LL_ADC_OVS_GRP_REGULAR_CONTINUED);
+  LL_ADC_ConfigOverSamplingRatioShift(ADC3, 1024, LL_ADC_OVS_SHIFT_RIGHT_10);
+  LL_ADC_SetOverSamplingDiscont(ADC3, LL_ADC_OVS_REG_CONT);
   ADC_InitStruct.Resolution = LL_ADC_RESOLUTION_16B;
   ADC_InitStruct.LowPowerMode = LL_ADC_LP_MODE_NONE;
   LL_ADC_Init(ADC3, &ADC_InitStruct);
@@ -2724,6 +2726,7 @@ void startup(void const * argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
+  battery_init();
 
   /**
    * @note User must ensure the parameters in `drv8874_init()` are correct,
