@@ -154,7 +154,7 @@ void drv8874_get_feedback(drv8874_t *dev)
     /* Equation 2: V_{IPROPI} (V) = I_{PROPI} (A) x R_{IPROPI} (Ω) */
     dev->current_torque = (drv8874_float_t)drv8874_adc[dev->id-1] / (drv8874_float_t)dev->ext_resistor * 1000.0 / DRV8874_CURRENT_FACTOR / 2 * dev->torque_coefficient;
     // DRV8874_LOG_INFO("DRV8874 motor %u current torque %f Nm.\n", dev->id, dev->current_torque);
-    DRV8874_LOG_INFO("DRV8874 motor %u adc value %d.\n", dev->id, drv8874_adc[dev->id-1]);
+    // DRV8874_LOG_INFO("DRV8874 motor %u adc value %d.\n", dev->id, drv8874_adc[dev->id-1]);
 }
 /**
  * @brief Update position control logic for the motor.

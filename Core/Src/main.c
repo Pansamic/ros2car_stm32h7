@@ -324,18 +324,18 @@ void SystemClock_Config(void)
   */
 void PeriphCommonClock_Config(void)
 {
-  LL_RCC_PLL2P_Enable();
-  LL_RCC_PLL2_SetVCOInputRange(LL_RCC_PLLINPUTRANGE_8_16);
-  LL_RCC_PLL2_SetVCOOutputRange(LL_RCC_PLLVCORANGE_MEDIUM);
-  LL_RCC_PLL2_SetM(3);
-  LL_RCC_PLL2_SetN(12);
-  LL_RCC_PLL2_SetP(2);
-  LL_RCC_PLL2_SetQ(4);
-  LL_RCC_PLL2_SetR(4);
-  LL_RCC_PLL2_Enable();
+  LL_RCC_PLL3R_Enable();
+  LL_RCC_PLL3_SetVCOInputRange(LL_RCC_PLLINPUTRANGE_4_8);
+  LL_RCC_PLL3_SetVCOOutputRange(LL_RCC_PLLVCORANGE_WIDE);
+  LL_RCC_PLL3_SetM(10);
+  LL_RCC_PLL3_SetN(180);
+  LL_RCC_PLL3_SetP(10);
+  LL_RCC_PLL3_SetQ(10);
+  LL_RCC_PLL3_SetR(10);
+  LL_RCC_PLL3_Enable();
 
    /* Wait till PLL is ready */
-  while(LL_RCC_PLL2_IsReady() != 1)
+  while(LL_RCC_PLL3_IsReady() != 1)
   {
   }
 
@@ -359,7 +359,7 @@ static void MX_ADC1_Init(void)
 
   LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-  LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSOURCE_PLL2P);
+  LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSOURCE_PLL3R);
 
   /* Peripheral clock enable */
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_ADC12);
@@ -492,7 +492,7 @@ static void MX_ADC3_Init(void)
   LL_ADC_REG_InitTypeDef ADC_REG_InitStruct = {0};
   LL_ADC_CommonInitTypeDef ADC_CommonInitStruct = {0};
 
-  LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSOURCE_PLL2P);
+  LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSOURCE_PLL3R);
 
   /* Peripheral clock enable */
   LL_AHB4_GRP1_EnableClock(LL_AHB4_GRP1_PERIPH_ADC3);
@@ -536,7 +536,9 @@ static void MX_ADC3_Init(void)
 
   /** Common config
   */
-  LL_ADC_SetOverSamplingScope(ADC3, LL_ADC_OVS_DISABLE);
+  LL_ADC_SetOverSamplingScope(ADC3, LL_ADC_OVS_GRP_REGULAR_CONTINUED);
+  LL_ADC_ConfigOverSamplingRatioShift(ADC3, 1024, LL_ADC_OVS_SHIFT_RIGHT_10);
+  LL_ADC_SetOverSamplingDiscont(ADC3, LL_ADC_OVS_REG_CONT);
   ADC_InitStruct.Resolution = LL_ADC_RESOLUTION_16B;
   ADC_InitStruct.LowPowerMode = LL_ADC_LP_MODE_NONE;
   LL_ADC_Init(ADC3, &ADC_InitStruct);
