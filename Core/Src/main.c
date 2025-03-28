@@ -188,8 +188,6 @@ int main(void)
   uart_open(&uart1_cb);
   uart_open(&uart2_cb);
   uart_open(&uart3_cb);
-  // while(1)
-  // LL_USART_TransmitData8(USART1, 'A');
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -326,12 +324,12 @@ void PeriphCommonClock_Config(void)
 {
   LL_RCC_PLL2P_Enable();
   LL_RCC_PLL2_SetVCOInputRange(LL_RCC_PLLINPUTRANGE_8_16);
-  LL_RCC_PLL2_SetVCOOutputRange(LL_RCC_PLLVCORANGE_MEDIUM);
+  LL_RCC_PLL2_SetVCOOutputRange(LL_RCC_PLLVCORANGE_WIDE);
   LL_RCC_PLL2_SetM(3);
-  LL_RCC_PLL2_SetN(12);
-  LL_RCC_PLL2_SetP(2);
-  LL_RCC_PLL2_SetQ(4);
-  LL_RCC_PLL2_SetR(4);
+  LL_RCC_PLL2_SetN(27);
+  LL_RCC_PLL2_SetP(5);
+  LL_RCC_PLL2_SetQ(5);
+  LL_RCC_PLL2_SetR(5);
   LL_RCC_PLL2_Enable();
 
    /* Wait till PLL is ready */
@@ -373,20 +371,20 @@ static void MX_ADC1_Init(void)
   PA3   ------> ADC1_INP15
   PB1   ------> ADC1_INP5
   */
-  GPIO_InitStruct.Pin = ADC_MOTOR4_Pin;
+  GPIO_InitStruct.Pin = ADC_MOTOR1_Pin;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-  LL_GPIO_Init(ADC_MOTOR4_GPIO_Port, &GPIO_InitStruct);
+  LL_GPIO_Init(ADC_MOTOR1_GPIO_Port, &GPIO_InitStruct);
 
   GPIO_InitStruct.Pin = ADC_MOTOR2_Pin|ADC_MOTOR3_Pin;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
   LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  GPIO_InitStruct.Pin = ADC_MOTOR1_Pin;
+  GPIO_InitStruct.Pin = ADC_MOTOR4_Pin;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-  LL_GPIO_Init(ADC_MOTOR1_GPIO_Port, &GPIO_InitStruct);
+  LL_GPIO_Init(ADC_MOTOR4_GPIO_Port, &GPIO_InitStruct);
 
   /* ADC1 DMA Init */
 
@@ -415,7 +413,9 @@ static void MX_ADC1_Init(void)
 
   /** Common config
   */
-  LL_ADC_SetOverSamplingScope(ADC1, LL_ADC_OVS_DISABLE);
+  LL_ADC_SetOverSamplingScope(ADC1, LL_ADC_OVS_GRP_REGULAR_CONTINUED);
+  LL_ADC_ConfigOverSamplingRatioShift(ADC1, 16, LL_ADC_OVS_SHIFT_RIGHT_4);
+  LL_ADC_SetOverSamplingDiscont(ADC1, LL_ADC_OVS_REG_CONT);
   ADC_InitStruct.Resolution = LL_ADC_RESOLUTION_16B;
   ADC_InitStruct.LowPowerMode = LL_ADC_LP_MODE_NONE;
   LL_ADC_Init(ADC1, &ADC_InitStruct);
@@ -426,7 +426,7 @@ static void MX_ADC1_Init(void)
   ADC_REG_InitStruct.Overrun = LL_ADC_REG_OVR_DATA_OVERWRITTEN;
   LL_ADC_REG_Init(ADC1, &ADC_REG_InitStruct);
   LL_ADC_REG_SetDataTransferMode(ADC1, LL_ADC_REG_DMA_TRANSFER_UNLIMITED);
-  ADC_CommonInitStruct.CommonClock = LL_ADC_CLOCK_ASYNC_DIV1;
+  ADC_CommonInitStruct.CommonClock = LL_ADC_CLOCK_ASYNC_DIV2;
   ADC_CommonInitStruct.Multimode = LL_ADC_MULTI_INDEPENDENT;
   LL_ADC_CommonInit(__LL_ADC_COMMON_INSTANCE(ADC1), &ADC_CommonInitStruct);
 
@@ -449,27 +449,27 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_1, LL_ADC_CHANNEL_5);
-  LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_5, LL_ADC_SAMPLINGTIME_64CYCLES_5);
-  LL_ADC_SetChannelSingleDiff(ADC1, LL_ADC_CHANNEL_5, LL_ADC_SINGLE_ENDED);
-
-  /** Configure Regular Channel
-  */
-  LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_2, LL_ADC_CHANNEL_10);
+  LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_1, LL_ADC_CHANNEL_10);
   LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_10, LL_ADC_SAMPLINGTIME_64CYCLES_5);
   LL_ADC_SetChannelSingleDiff(ADC1, LL_ADC_CHANNEL_10, LL_ADC_SINGLE_ENDED);
 
   /** Configure Regular Channel
   */
-  LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_3, LL_ADC_CHANNEL_15);
-  LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_15, LL_ADC_SAMPLINGTIME_64CYCLES_5);
-  LL_ADC_SetChannelSingleDiff(ADC1, LL_ADC_CHANNEL_15, LL_ADC_SINGLE_ENDED);
+  LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_2, LL_ADC_CHANNEL_5);
+  LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_5, LL_ADC_SAMPLINGTIME_64CYCLES_5);
+  LL_ADC_SetChannelSingleDiff(ADC1, LL_ADC_CHANNEL_5, LL_ADC_SINGLE_ENDED);
 
   /** Configure Regular Channel
   */
-  LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_4, LL_ADC_CHANNEL_9);
+  LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_3, LL_ADC_CHANNEL_9);
   LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_9, LL_ADC_SAMPLINGTIME_64CYCLES_5);
   LL_ADC_SetChannelSingleDiff(ADC1, LL_ADC_CHANNEL_9, LL_ADC_SINGLE_ENDED);
+
+  /** Configure Regular Channel
+  */
+  LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_4, LL_ADC_CHANNEL_15);
+  LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_15, LL_ADC_SAMPLINGTIME_64CYCLES_5);
+  LL_ADC_SetChannelSingleDiff(ADC1, LL_ADC_CHANNEL_15, LL_ADC_SINGLE_ENDED);
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
@@ -2740,9 +2740,9 @@ void startup(void const * argument)
   drv8874_set_position(&motors[2], 10*3.14159);
   drv8874_set_position(&motors[3], 10*3.14159);
   drv8874_start(&motors[0]);
-  // drv8874_start(&motors[1]);
-  // drv8874_start(&motors[2]);
-  // drv8874_start(&motors[3]);
+  drv8874_start(&motors[1]);
+  drv8874_start(&motors[2]);
+  drv8874_start(&motors[3]);
   ws2812b_init();
 
   ws2812b_set_color(0, 255, 255, 255);

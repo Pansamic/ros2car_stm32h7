@@ -156,8 +156,8 @@ uint32_t get_random_number(void);
 #define ETH_RESET_GPIO_Port GPIOE
 #define PWM_SERVO2_Pin LL_GPIO_PIN_7
 #define PWM_SERVO2_GPIO_Port GPIOC
-#define ADC_MOTOR4_Pin LL_GPIO_PIN_0
-#define ADC_MOTOR4_GPIO_Port GPIOC
+#define ADC_MOTOR1_Pin LL_GPIO_PIN_0
+#define ADC_MOTOR1_GPIO_Port GPIOC
 #define ADC_VCC_Pin LL_GPIO_PIN_3
 #define ADC_VCC_GPIO_Port GPIOC
 #define PWM_SERVO1_Pin LL_GPIO_PIN_6
@@ -207,8 +207,8 @@ uint32_t get_random_number(void);
 #define SBUS_RX_GPIO_Port GPIOD
 #define FSYNC2_Pin LL_GPIO_PIN_13
 #define FSYNC2_GPIO_Port GPIOD
-#define ADC_MOTOR1_Pin LL_GPIO_PIN_3
-#define ADC_MOTOR1_GPIO_Port GPIOA
+#define ADC_MOTOR4_Pin LL_GPIO_PIN_3
+#define ADC_MOTOR4_GPIO_Port GPIOA
 #define ADC_MOTOR3_Pin LL_GPIO_PIN_1
 #define ADC_MOTOR3_GPIO_Port GPIOB
 #define CTRL_MOTOR1_Pin LL_GPIO_PIN_9

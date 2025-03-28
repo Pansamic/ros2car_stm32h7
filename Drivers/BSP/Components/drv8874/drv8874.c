@@ -56,7 +56,9 @@ static xTimerHandle motor_position_control_timer;
  * @return drv8874_err_t DRV8874_OK on success, DRV8874_ERROR on failure.
  */
 static drv8874_err_t drv8874_init_adc(void)
-{    
+{
+    // LL_ADC_SetChannelPreselection(ADC1, LL_ADC_CHANNEL_15);
+
     /* Run ADC self calibration */
     // Need to define which calib parameter has to be used
     LL_ADC_StartCalibration(ADC1, LL_ADC_CALIB_OFFSET, LL_ADC_SINGLE_ENDED);
@@ -77,6 +79,7 @@ static drv8874_err_t drv8874_init_adc(void)
         (LL_ADC_REG_IsConversionOngoing(ADC1) == 0)   )
     {
         LL_ADC_REG_StartConversion(ADC1);
+        vTaskDelay(pdMS_TO_TICKS(5));
         LL_DMA_SetPeriphAddress(DMA2, LL_DMA_STREAM_2, LL_ADC_DMA_GetRegAddr(ADC1, LL_ADC_DMA_REG_REGULAR_DATA_MULTI));
         LL_DMA_SetMemoryAddress(DMA2, LL_DMA_STREAM_2, (uint32_t)drv8874_adc);
         LL_DMA_SetDataLength(DMA2, LL_DMA_STREAM_2, DRV8874_MOTOR_AMOUNT);
@@ -152,9 +155,13 @@ void drv8874_get_feedback(drv8874_t *dev)
     /* Here are 2 equations from DRV8874 datasheet to calculate H bridge current inside the chip. */
     /* Equation 1: I_{PROPI} (μA) = (I_{LS1} + I_{LS2}) (A) x A_{IPROPI} (μA/A) */
     /* Equation 2: V_{IPROPI} (V) = I_{PROPI} (A) x R_{IPROPI} (Ω) */
-    dev->current_torque = (drv8874_float_t)drv8874_adc[dev->id-1] / (drv8874_float_t)dev->ext_resistor * 1000.0 / DRV8874_CURRENT_FACTOR / 2 * dev->torque_coefficient;
-    // DRV8874_LOG_INFO("DRV8874 motor %u current torque %f Nm.\n", dev->id, dev->current_torque);
-    DRV8874_LOG_INFO("DRV8874 motor %u adc value %d.\n", dev->id, drv8874_adc[dev->id-1]);
+    // __DSB();
+    // SCB_InvalidateDCache_by_Addr((uint32_t*)drv8874_adc, sizeof(drv8874_adc));
+    drv8874_float_t voltage = (drv8874_float_t)drv8874_adc[dev->id-1] * 3.3 / 65535.0;
+    dev->current_torque = voltage / (drv8874_float_t)dev->ext_resistor * 1000.0 / DRV8874_CURRENT_FACTOR / 2 * dev->torque_coefficient;
+    DRV8874_LOG_DEBUG("DRV8874 motor %u current torque %f Nm.\n", dev->id, dev->current_torque);
+    // DRV8874_LOG_TRACE("DRV8874 motor %u voltage %f V.\n", dev->id, voltage);
+    // DRV8874_LOG_TRACE("DRV8874 motor %u adc value %d.\n", dev->id, drv8874_adc[dev->id-1]);
 }
 /**
  * @brief Update position control logic for the motor.
@@ -358,10 +365,26 @@ BaseType_t drv8874_control_command(char * write_buffer, size_t write_buffer_len,
     char subcommand[16];
     char mode[16];
     drv8874_float_t target_value;
-    drv8874_t *motor = &motors[0]; // Assuming single motor for simplicity
+    uint8_t motor_id;
+    drv8874_t *motor;
+
+    // Parse motor ID
+    parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, 1, &parameter_string_length);
+    if (parameter_string == NULL)
+    {
+        write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Missing motor ID.\r\n");
+        return pdFALSE;
+    }
+    motor_id = (uint8_t) atoi(parameter_string);
+    if (motor_id < 1 || motor_id > DRV8874_MOTOR_AMOUNT)
+    {
+        write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Invalid motor ID. Must be between 1 and %d.\r\n", DRV8874_MOTOR_AMOUNT);
+        return pdFALSE;
+    }
+    motor = &motors[motor_id - 1];
 
     // Parse subcommand ("mode" or "param")
-    parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, 1, &parameter_string_length);
+    parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, 2, &parameter_string_length);
     if (parameter_string == NULL)
     {
         write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Missing subcommand.\r\n");
@@ -373,7 +396,7 @@ BaseType_t drv8874_control_command(char * write_buffer, size_t write_buffer_len,
     if (strcmp(subcommand, "mode") == 0)
     {
         // Parse mode
-        parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, 2, &parameter_string_length);
+        parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, 3, &parameter_string_length);
         if (parameter_string == NULL)
         {
             write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Missing mode.\r\n");
@@ -383,7 +406,7 @@ BaseType_t drv8874_control_command(char * write_buffer, size_t write_buffer_len,
         mode[parameter_string_length] = '\0';
 
         // Parse target value
-        parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, 3, &parameter_string_length);
+        parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, 4, &parameter_string_length);
         if (parameter_string == NULL)
         {
             write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Missing target value.\r\n");
@@ -416,7 +439,7 @@ BaseType_t drv8874_control_command(char * write_buffer, size_t write_buffer_len,
     else if (strcmp(subcommand, "param") == 0)
     {
         // Parse mode
-        parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, 2, &parameter_string_length);
+        parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, 3, &parameter_string_length);
         if (parameter_string == NULL)
         {
             write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Missing mode.\r\n");
@@ -449,7 +472,7 @@ BaseType_t drv8874_control_command(char * write_buffer, size_t write_buffer_len,
         }
 
         // Parse parameters
-        int param_count = 3; // Start after "param <mode>"
+        int param_count = 4; // Start after "param <mode>"
         while ((parameter_string = (char *) FreeRTOS_CLIGetParameter(command_string, param_count, &parameter_string_length)) != NULL)
         {
             char param_name[16];
