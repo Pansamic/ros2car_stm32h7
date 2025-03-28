@@ -15,6 +15,7 @@
 #include "timers.h"
 #include "FreeRTOS_CLI.h"
 #include "lwprintf.h"
+#include "battery.h"
 #include "drv8874.h"
 
 #ifdef cplusplus
@@ -44,8 +45,10 @@ uint32_t drv8874_timer_count = 0;
  * inside the DRV8874 chip through the external resistance. */
 int16_t drv8874_adc[DRV8874_MOTOR_AMOUNT] = {0};
 
+drv8874_float_t drv8874_adc_resolution = 0;
+
 /* FreeRTOS timer handles for motor control loop timer */
-static xTimerHandle motor_torque_control_timer;
+static xTimerHandle motor_current_control_timer;
 static xTimerHandle motor_velocity_control_timer;
 static xTimerHandle motor_position_control_timer;
 
@@ -57,7 +60,10 @@ static xTimerHandle motor_position_control_timer;
  */
 static drv8874_err_t drv8874_init_adc(void)
 {
-    // LL_ADC_SetChannelPreselection(ADC1, LL_ADC_CHANNEL_15);
+    LL_ADC_SetChannelPreselection(ADC1, LL_ADC_CHANNEL_10);
+    LL_ADC_SetChannelPreselection(ADC1, LL_ADC_CHANNEL_9);
+    LL_ADC_SetChannelPreselection(ADC1, LL_ADC_CHANNEL_5);
+    LL_ADC_SetChannelPreselection(ADC1, LL_ADC_CHANNEL_15);
 
     /* Run ADC self calibration */
     // Need to define which calib parameter has to be used
@@ -90,7 +96,25 @@ static drv8874_err_t drv8874_init_adc(void)
         DRV8874_LOG_ERROR("DRV8874 init failed: ADC conversion start could not be performed.\n");
         return DRV8874_ERROR;
     }
-
+    uint32_t adc_resolution = LL_ADC_GetResolution(ADC1);
+    switch (adc_resolution)
+    {
+    case LL_ADC_RESOLUTION_10B:
+        drv8874_adc_resolution = 1023.0;
+        break;
+    case LL_ADC_RESOLUTION_12B:
+        drv8874_adc_resolution = 4095.0;
+        break;
+    case LL_ADC_RESOLUTION_14B:
+        drv8874_adc_resolution = 16383.0;
+        break;
+    case LL_ADC_RESOLUTION_16B:
+        drv8874_adc_resolution = 65535.0;
+        break;
+    default:
+        DRV8874_LOG_ERROR("DRV8874 init failed: ADC resolution not supported: %u.\n", adc_resolution);
+        return DRV8874_ERROR;
+    }
     return DRV8874_OK;
 }
 /**
@@ -157,11 +181,11 @@ void drv8874_get_feedback(drv8874_t *dev)
     /* Equation 2: V_{IPROPI} (V) = I_{PROPI} (A) x R_{IPROPI} (Ω) */
     // __DSB();
     // SCB_InvalidateDCache_by_Addr((uint32_t*)drv8874_adc, sizeof(drv8874_adc));
-    drv8874_float_t voltage = (drv8874_float_t)drv8874_adc[dev->id-1] * 3.3 / 65535.0;
-    dev->current_torque = voltage / (drv8874_float_t)dev->ext_resistor * 1000.0 / DRV8874_CURRENT_FACTOR / 2 * dev->torque_coefficient;
-    DRV8874_LOG_DEBUG("DRV8874 motor %u current torque %f Nm.\n", dev->id, dev->current_torque);
-    // DRV8874_LOG_TRACE("DRV8874 motor %u voltage %f V.\n", dev->id, voltage);
-    // DRV8874_LOG_TRACE("DRV8874 motor %u adc value %d.\n", dev->id, drv8874_adc[dev->id-1]);
+    drv8874_float_t voltage = (drv8874_float_t)drv8874_adc[dev->id-1] * 3.3 / drv8874_adc_resolution;
+    dev->current_current = voltage / (drv8874_float_t)dev->cur_sense_res * 1000000.0 / DRV8874_CURRENT_FACTOR / 2;
+    DRV8874_LOG_TRACE("DRV8874 motor %u adc value %d.\n", dev->id, drv8874_adc[dev->id-1]);
+    DRV8874_LOG_TRACE("DRV8874 motor %u voltage %f V.\n", dev->id, voltage);
+    DRV8874_LOG_INFO("DRV8874 motor %u current current %f A.\n", dev->id, dev->current_current);
 }
 /**
  * @brief Update position control logic for the motor.
@@ -224,40 +248,40 @@ static drv8874_err_t drv8874_velocity_control(drv8874_t *dev)
     return DRV8874_OK;
 }
 /**
- * @brief Update torque control logic for the motor.
+ * @brief Update current control logic for the motor.
  * 
  * @param dev Pointer to the DRV8874 motor instance.
  * @return drv8874_err_t DRV8874_OK on success, DRV8874_ERROR on failure.
  */
-drv8874_err_t drv8874_torque_control(drv8874_t *dev)
+drv8874_err_t drv8874_current_control(drv8874_t *dev)
 {
     /* Output compare value to be written into PWM timer channel */
     uint32_t oc_value = 0;
 
     drv8874_get_feedback(dev);
 
-    /* Calculate torque error */
-    if (dev->mode != DRV8874_MODE_TORQUE)
+    /* Calculate current error */
+    if (dev->mode != DRV8874_MODE_CURRENT)
     {
-        dev->target_torque = dev->control_vel;
+        dev->target_current = dev->control_vel;
     }
 
-    dev->error_torq = dev->target_torque - dev->current_torque;
-    DRV8874_LOG_TRACE("DRV8874 torque control: motor %u torque error %f.\n", dev->id, dev->error_torq);
+    dev->error_cur = dev->target_current - dev->current_current;
+    DRV8874_LOG_TRACE("DRV8874 current control: motor %u current error %f.\n", dev->id, dev->error_cur);
 
     /* Update integral error */
-    dev->integral_error_torq += dev->error_torq;
-    DRV8874_LOG_TRACE("DRV8874 torque control: motor %u integral torque error %f.\n", dev->id, dev->integral_error_torq);
+    dev->integral_error_cur += dev->error_cur;
+    DRV8874_LOG_TRACE("DRV8874 current control: motor %u integral current error %f.\n", dev->id, dev->integral_error_cur);
 
     /* Apply PI control logic */
-    dev->control_torq = (dev->kp_torq * dev->error_torq
-        + dev->ki_torq * dev->integral_error_torq
-        // + dev->kd_torq * (dev->error_torq - dev->prev_error_torq)
+    dev->control_cur = (dev->kp_cur * dev->error_cur
+        + dev->ki_cur * dev->integral_error_cur
+        // + dev->kd_torq * (dev->error_cur - dev->prev_error_cur)
     );
-    DRV8874_LOG_TRACE("DRV8874 torque control: motor %u control torque %f.\n", dev->id, dev->control_torq);
+    DRV8874_LOG_TRACE("DRV8874 current control: motor %u control current %f.\n", dev->id, dev->control_cur);
 
     /* Update previous error with current error for next control update */
-    dev->prev_error_torq = dev->error_torq;
+    dev->prev_error_cur = dev->error_cur;
 
     /* If sudden rotation direction reverse is needed, brake until motor velocity decrease to 0.1 rad/s
      * and then apply the reverse velocity to motor to avoid damage of H bridge inside the DRV8874 */
@@ -269,23 +293,27 @@ drv8874_err_t drv8874_torque_control(drv8874_t *dev)
     // }
     // else
     // {
-        if((dev->control_torq < 0 && !dev->reverse) || (dev->control_torq > 0 && dev->reverse))
+        if((dev->control_cur < 0 && !dev->reverse) || (dev->control_cur > 0 && dev->reverse))
         {
             drv8874_set_direction(dev, DRV8874_DIRECTION_BACKWARD);
         }
-        else if((dev->control_torq > 0 && !dev->reverse) || (dev->control_torq < 0 && dev->reverse))
+        else if((dev->control_cur > 0 && !dev->reverse) || (dev->control_cur < 0 && dev->reverse))
         {
             drv8874_set_direction(dev, DRV8874_DIRECTION_FORWARD);
         }
     // }
 
-    /* Output compare value is the sum of feed forward value and feed back value. */
-    oc_value = (uint32_t)((drv8874_float_t)dev->pwm_tim_autoreload * dev->control_vel / dev->max_velocity);
-    DRV8874_LOG_TRACE("DRV8874 velocity control: motor %u raw output compare value %d.\n", dev->id, oc_value);
+    /* Calculate target voltage for motor. */
+    drv8874_float_t target_voltage = dev->control_cur * dev->armature_res + dev->back_emf_constant * dev->turndown_ratio * dev->current_velocity;
+    DRV8874_LOG_TRACE("DRV8874 current control: motor %u target voltage %f V.\n", dev->id, target_voltage);
+
+    /* Calculate output compare value for PWM timer */
+    oc_value = (uint32_t)( target_voltage / get_battery_voltage() * dev->pwm_tim_autoreload );
+    DRV8874_LOG_TRACE("DRV8874 current control: motor %u raw output compare value %d.\n", dev->id, oc_value);
 
     /* Constrain the value of output comapre register */
     oc_value = oc_value > dev->pwm_tim_autoreload ? dev->pwm_tim_autoreload : oc_value;
-    DRV8874_LOG_TRACE("DRV8874 velocity control: motor %u constrained output compare value %d.\n", dev->id, oc_value);
+    DRV8874_LOG_TRACE("DRV8874 current control: motor %u constrained output compare value %d.\n", dev->id, oc_value);
 
     switch(dev->pwm_channel)
     {
@@ -336,18 +364,18 @@ static void drv8874_velocity_controller(TimerHandle_t xTimer)
             drv8874_velocity_control(&motors[3]);
     }
 }
-static void drv8874_torque_controller(TimerHandle_t xTimer)
+static void drv8874_current_controller(TimerHandle_t xTimer)
 {
-    if (xTimer == motor_torque_control_timer)
+    if (xTimer == motor_current_control_timer)
     {
         if (motors[0].enable)
-            drv8874_torque_control(&motors[0]);
+            drv8874_current_control(&motors[0]);
         if (motors[1].enable)
-            drv8874_torque_control(&motors[1]);
+            drv8874_current_control(&motors[1]);
         if (motors[2].enable)
-            drv8874_torque_control(&motors[2]);
+            drv8874_current_control(&motors[2]);
         if (motors[3].enable)
-            drv8874_torque_control(&motors[3]);
+            drv8874_current_control(&motors[3]);
     }
 }
 /**
@@ -425,14 +453,14 @@ BaseType_t drv8874_control_command(char * write_buffer, size_t write_buffer_len,
             drv8874_set_velocity_mode(motor);
             drv8874_set_velocity(motor, target_value);
         }
-        else if (strcmp(mode, "torq") == 0 || strcmp(mode, "torque") == 0)
+        else if (strcmp(mode, "cur") == 0 || strcmp(mode, "current") == 0)
         {
-            drv8874_set_torque_mode(motor);
-            drv8874_set_torque(motor, target_value);
+            drv8874_set_current_mode(motor);
+            drv8874_set_current(motor, target_value);
         }
         else
         {
-            write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Invalid mode. Use 'pos', 'vel', or 'torq'.\r\n");
+            write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Invalid mode. Use 'pos', 'vel', or 'cur'.\r\n");
             return pdFALSE;
         }
     }
@@ -460,14 +488,14 @@ BaseType_t drv8874_control_command(char * write_buffer, size_t write_buffer_len,
             requires_kp = 1;
             requires_ki = 1;
         }
-        else if (strcmp(mode, "torq") == 0 || strcmp(mode, "torque") == 0)
+        else if (strcmp(mode, "cur") == 0 || strcmp(mode, "current") == 0)
         {
             requires_kp = 1;
             requires_ki = 1;
         }
         else
         {
-            write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Invalid mode. Use 'pos', 'vel', or 'torq'.\r\n");
+            write_buffer_len -= lwsnprintf(write_buffer, write_buffer_len, "Error: Invalid mode. Use 'pos', 'vel', or 'cur'.\r\n");
             return pdFALSE;
         }
 
@@ -503,8 +531,8 @@ BaseType_t drv8874_control_command(char * write_buffer, size_t write_buffer_len,
                     motor->kp_pos = param_value;
                 else if (strcmp(mode, "vel") == 0 || strcmp(mode, "velocity") == 0)
                     motor->kp_vel = param_value;
-                else if (strcmp(mode, "torq") == 0 || strcmp(mode, "torque") == 0)
-                    motor->kp_torq = param_value;
+                else if (strcmp(mode, "cur") == 0 || strcmp(mode, "current") == 0)
+                    motor->kp_cur = param_value;
             }
             else if (strcmp(param_name, "ki") == 0)
             {
@@ -515,8 +543,8 @@ BaseType_t drv8874_control_command(char * write_buffer, size_t write_buffer_len,
                 }
                 if (strcmp(mode, "vel") == 0 || strcmp(mode, "velocity") == 0)
                     motor->ki_vel = param_value;
-                else if (strcmp(mode, "torq") == 0 || strcmp(mode, "torque") == 0)
-                    motor->ki_torq = param_value;
+                else if (strcmp(mode, "cur") == 0 || strcmp(mode, "current") == 0)
+                    motor->ki_cur = param_value;
             }
             else if (strcmp(param_name, "kd") == 0)
             {
@@ -563,16 +591,16 @@ drv8874_err_t drv8874_init()
     motors[0].pwm_tim_autoreload = LL_TIM_GetAutoReload(MOTOR_PWM_TIM);
     motors[0].encoder_timer = MOTOR1_ENC_TIM;
     motors[0].encoder_round_count = 13*4;
-    motors[0].torque_coefficient = 0.3f; // A inaccurate approximation
     motors[0].turndown_ratio = 30;
-    motors[0].max_velocity = 6*2*3.1415926;
-    motors[0].ext_resistor = 1500; // From schematic of this board.
+    motors[0].back_emf_constant = 0.0117;
+    motors[0].armature_res = 3;
+    motors[0].cur_sense_res = 1500; // From schematic of this board.
     motors[0].kp_pos = 5;
     motors[0].kd_pos = 0.1;
     motors[0].kp_vel = 5;
     motors[0].ki_vel = 0.1;
-    motors[0].kp_torq = 5;
-    motors[0].ki_torq = 0.1;
+    motors[0].kp_cur = 0.8;
+    motors[0].ki_cur = 0.01;
 
     motors[1].id = 2;
     motors[1].mode = DRV8874_MODE_VELOCITY;
@@ -585,16 +613,16 @@ drv8874_err_t drv8874_init()
     motors[1].pwm_tim_autoreload = LL_TIM_GetAutoReload(MOTOR_PWM_TIM);
     motors[1].encoder_timer = MOTOR2_ENC_TIM;
     motors[1].encoder_round_count = 13*4;
-    motors[1].torque_coefficient = 0.3f; // A inaccurate approximation
     motors[1].turndown_ratio = 30;
-    motors[1].max_velocity = 6*2*3.1415926;
-    motors[1].ext_resistor = 1500; // From schematic of this board.
+    motors[1].back_emf_constant = 0.0117;
+    motors[1].armature_res = 3;
+    motors[1].cur_sense_res = 1500; // From schematic of this board.
     motors[1].kp_pos = 5;
     motors[1].kd_pos = 0.1;
     motors[1].kp_vel = 5;
     motors[1].ki_vel = 0.1;
-    motors[1].kp_torq = 5;
-    motors[1].ki_torq = 0.1;
+    motors[1].kp_cur = 10;
+    motors[1].ki_cur = 0.2;
 
     motors[2].id = 3;
     motors[2].mode = DRV8874_MODE_VELOCITY;
@@ -607,16 +635,16 @@ drv8874_err_t drv8874_init()
     motors[2].pwm_tim_autoreload = LL_TIM_GetAutoReload(MOTOR_PWM_TIM);
     motors[2].encoder_timer = MOTOR3_ENC_TIM;
     motors[2].encoder_round_count = 13*4;
-    motors[2].torque_coefficient = 0.3f; // A inaccurate approximation
     motors[2].turndown_ratio = 30;
-    motors[2].max_velocity = 6*2*3.1415926;
-    motors[2].ext_resistor = 1500; // From schematic of this board.
+    motors[2].back_emf_constant = 0.0117;
+    motors[2].armature_res = 3;
+    motors[2].cur_sense_res = 1500; // From schematic of this board.
     motors[2].kp_pos = 5;
     motors[2].kd_pos = 0.1;
     motors[2].kp_vel = 5;
     motors[2].ki_vel = 0.1;
-    motors[2].kp_torq = 5;
-    motors[2].ki_torq = 0.1;
+    motors[2].kp_cur = 5;
+    motors[2].ki_cur = 0.1;
 
     motors[3].id = 4;
     motors[3].mode = DRV8874_MODE_VELOCITY;
@@ -629,27 +657,27 @@ drv8874_err_t drv8874_init()
     motors[3].pwm_tim_autoreload = LL_TIM_GetAutoReload(MOTOR_PWM_TIM);
     motors[3].encoder_timer = MOTOR4_ENC_TIM;
     motors[3].encoder_round_count = 13*4;
-    motors[3].torque_coefficient = 0.3f; // A inaccurate approximation
     motors[3].turndown_ratio = 30;
-    motors[3].max_velocity = 6*2*3.1415926;
-    motors[3].ext_resistor = 1500; // From schematic of this board.
+    motors[3].back_emf_constant = 0.0117;
+    motors[3].armature_res = 3;
+    motors[3].cur_sense_res = 1500; // From schematic of this board.
     motors[3].kp_pos = 5;
     motors[3].kd_pos = 0.1;
     motors[3].kp_vel = 5;
     motors[3].ki_vel = 0.1;
-    motors[3].kp_torq = 5;
-    motors[3].ki_torq = 0.1;
+    motors[3].kp_cur = 5;
+    motors[3].ki_cur = 0.1;
 
     for (drv8874_t* motor=motors ; motor<motors+sizeof(motors)/sizeof(motors[0]); motor++)
     {
-        DRV8874_LOG_DEBUG("DRV8874 motor %u initialization: reverse=%u, reverse_encoder=%u, round_count=%u, torque_coeffecient=%f, turndown_ratio=%f, max_velocity=%f.\n",
+        DRV8874_LOG_DEBUG("DRV8874 motor %u initialization: reverse=%u, reverse_encoder=%u, round_count=%u, turndown_ratio=%f, max_velocity=%f, back_emf_constant=%f, armature_res=%f.\n",
             motor->id,
             motor->reverse,
             motor->reverse_encoder,
             motor->encoder_round_count,
-            motor->torque_coefficient,
             motor->turndown_ratio,
-            motor->max_velocity);
+            motor->back_emf_constant,
+            motor->armature_res);
     }
 
     err = drv8874_init_adc();
@@ -668,10 +696,10 @@ drv8874_err_t drv8874_init()
     LL_TIM_EnableAllOutputs(MOTOR_PWM_TIM);
 
     /* Create FreeRTOS timer to handle motor control calculation. */
-    motor_torque_control_timer = xTimerCreate("motor_torque_control", pdMS_TO_TICKS(1), pdTRUE, NULL, drv8874_torque_controller);
+    motor_current_control_timer = xTimerCreate("motor_current_control", pdMS_TO_TICKS(1), pdTRUE, NULL, drv8874_current_controller);
     motor_velocity_control_timer = xTimerCreate("motor_velocity_control", pdMS_TO_TICKS(2), pdTRUE, NULL, drv8874_velocity_controller);
     motor_position_control_timer = xTimerCreate("motor_position_control", pdMS_TO_TICKS(10), pdTRUE, NULL, drv8874_position_controller);
-    xTimerStart(motor_torque_control_timer, 0);
+    xTimerStart(motor_current_control_timer, 0);
     xTimerStart(motor_velocity_control_timer, 0);
     xTimerStart(motor_position_control_timer, 0);
 
@@ -696,10 +724,10 @@ drv8874_err_t drv8874_set_velocity_mode(drv8874_t *dev)
     DRV8874_LOG_INFO("DRV8874 set motor %u velocity mode.\n", dev->id);
     return DRV8874_OK;
 }
-drv8874_err_t drv8874_set_torque_mode(drv8874_t *dev)
+drv8874_err_t drv8874_set_current_mode(drv8874_t *dev)
 {
-    dev->mode = DRV8874_MODE_TORQUE;
-    DRV8874_LOG_INFO("DRV8874 set motor %u torque mode.\n", dev->id);
+    dev->mode = DRV8874_MODE_CURRENT;
+    DRV8874_LOG_INFO("DRV8874 set motor %u current mode.\n", dev->id);
     return DRV8874_OK;
 }
 drv8874_err_t drv8874_set_position(drv8874_t *dev, drv8874_float_t position)
@@ -714,10 +742,10 @@ drv8874_err_t drv8874_set_velocity(drv8874_t *dev, drv8874_float_t velocity)
     DRV8874_LOG_DEBUG("DRV8874 set motor %u velocity: %f rad/s.\n", dev->id, velocity);
     return DRV8874_OK;
 }
-drv8874_err_t drv8874_set_torque(drv8874_t *dev, drv8874_float_t torque)
+drv8874_err_t drv8874_set_current(drv8874_t *dev, drv8874_float_t current)
 {
-    dev->target_torque = torque;
-    DRV8874_LOG_INFO("DRV8874 set motor %u torque: %f Nm.\n", dev->id, torque);
+    dev->target_current = current;
+    DRV8874_LOG_INFO("DRV8874 set motor %u current: %f Nm.\n", dev->id, current);
     return DRV8874_OK;
 }
 drv8874_err_t drv8874_set_direction(drv8874_t *dev, drv8874_direction_t direction)
@@ -746,12 +774,12 @@ drv8874_err_t drv8874_start(drv8874_t *dev)
     dev->control_vel = 0;
     dev->error_vel = 0;
     dev->prev_error_vel = 0;
-    dev->control_torq = 0;
-    dev->error_torq = 0;
-    dev->prev_error_torq = 0;
+    dev->control_cur = 0;
+    dev->error_cur = 0;
+    dev->prev_error_cur = 0;
     dev->current_position = 0;
     dev->current_velocity = 0;
-    dev->current_torque = 0;
+    dev->current_current = 0;
     dev->encoder_count = 0;
     dev->previous_encoder_count = 0;
 

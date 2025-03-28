@@ -78,7 +78,7 @@ battery_err_t battery_init(void)
  * @brief Read battery voltage
  * @return float Battery voltage 
  */
-float battery_read()
+float get_battery_voltage()
 {
     return (float)battery_adc * 3.3 * BATTERY_SCALE_FACTOR / 65535.0 ;
 }

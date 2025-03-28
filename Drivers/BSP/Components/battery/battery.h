@@ -28,6 +28,6 @@ typedef enum {
 } battery_err_t;
 
 battery_err_t battery_init(void);
-float battery_read();
+float get_battery_voltage();
 
 #endif // __BATTERY_H__

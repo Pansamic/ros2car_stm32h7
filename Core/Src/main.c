@@ -333,7 +333,7 @@ void PeriphCommonClock_Config(void)
   LL_RCC_PLL2_Enable();
 
    /* Wait till PLL is ready */
-  while(LL_RCC_PLL3_IsReady() != 1)
+  while(LL_RCC_PLL2_IsReady() != 1)
   {
   }
 
@@ -357,7 +357,7 @@ static void MX_ADC1_Init(void)
 
   LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-  LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSOURCE_PLL3R);
+  LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSOURCE_PLL2P);
 
   /* Peripheral clock enable */
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_ADC12);
@@ -414,9 +414,9 @@ static void MX_ADC1_Init(void)
   /** Common config
   */
   LL_ADC_SetOverSamplingScope(ADC1, LL_ADC_OVS_GRP_REGULAR_CONTINUED);
-  LL_ADC_ConfigOverSamplingRatioShift(ADC1, 16, LL_ADC_OVS_SHIFT_RIGHT_4);
+  LL_ADC_ConfigOverSamplingRatioShift(ADC1, 256, LL_ADC_OVS_SHIFT_RIGHT_8);
   LL_ADC_SetOverSamplingDiscont(ADC1, LL_ADC_OVS_REG_CONT);
-  ADC_InitStruct.Resolution = LL_ADC_RESOLUTION_16B;
+  ADC_InitStruct.Resolution = LL_ADC_RESOLUTION_14B;
   ADC_InitStruct.LowPowerMode = LL_ADC_LP_MODE_NONE;
   LL_ADC_Init(ADC1, &ADC_InitStruct);
   ADC_REG_InitStruct.TriggerSource = LL_ADC_REG_TRIG_SOFTWARE;
@@ -426,7 +426,7 @@ static void MX_ADC1_Init(void)
   ADC_REG_InitStruct.Overrun = LL_ADC_REG_OVR_DATA_OVERWRITTEN;
   LL_ADC_REG_Init(ADC1, &ADC_REG_InitStruct);
   LL_ADC_REG_SetDataTransferMode(ADC1, LL_ADC_REG_DMA_TRANSFER_UNLIMITED);
-  ADC_CommonInitStruct.CommonClock = LL_ADC_CLOCK_ASYNC_DIV2;
+  ADC_CommonInitStruct.CommonClock = LL_ADC_CLOCK_ASYNC_DIV1;
   ADC_CommonInitStruct.Multimode = LL_ADC_MULTI_INDEPENDENT;
   LL_ADC_CommonInit(__LL_ADC_COMMON_INSTANCE(ADC1), &ADC_CommonInitStruct);
 
@@ -455,15 +455,15 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_2, LL_ADC_CHANNEL_5);
-  LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_5, LL_ADC_SAMPLINGTIME_64CYCLES_5);
-  LL_ADC_SetChannelSingleDiff(ADC1, LL_ADC_CHANNEL_5, LL_ADC_SINGLE_ENDED);
+  LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_2, LL_ADC_CHANNEL_9);
+  LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_9, LL_ADC_SAMPLINGTIME_64CYCLES_5);
+  LL_ADC_SetChannelSingleDiff(ADC1, LL_ADC_CHANNEL_9, LL_ADC_SINGLE_ENDED);
 
   /** Configure Regular Channel
   */
-  LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_3, LL_ADC_CHANNEL_9);
-  LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_9, LL_ADC_SAMPLINGTIME_64CYCLES_5);
-  LL_ADC_SetChannelSingleDiff(ADC1, LL_ADC_CHANNEL_9, LL_ADC_SINGLE_ENDED);
+  LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_3, LL_ADC_CHANNEL_5);
+  LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_5, LL_ADC_SAMPLINGTIME_64CYCLES_5);
+  LL_ADC_SetChannelSingleDiff(ADC1, LL_ADC_CHANNEL_5, LL_ADC_SINGLE_ENDED);
 
   /** Configure Regular Channel
   */
@@ -492,7 +492,7 @@ static void MX_ADC3_Init(void)
   LL_ADC_REG_InitTypeDef ADC_REG_InitStruct = {0};
   LL_ADC_CommonInitTypeDef ADC_CommonInitStruct = {0};
 
-  LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSOURCE_PLL3R);
+  LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSOURCE_PLL2P);
 
   /* Peripheral clock enable */
   LL_AHB4_GRP1_EnableClock(LL_AHB4_GRP1_PERIPH_ADC3);
@@ -549,6 +549,7 @@ static void MX_ADC3_Init(void)
   ADC_REG_InitStruct.Overrun = LL_ADC_REG_OVR_DATA_OVERWRITTEN;
   LL_ADC_REG_Init(ADC3, &ADC_REG_InitStruct);
   LL_ADC_REG_SetDataTransferMode(ADC3, LL_ADC_REG_DMA_TRANSFER_UNLIMITED);
+  ADC_CommonInitStruct.CommonClock = LL_ADC_CLOCK_ASYNC_DIV1;
   ADC_CommonInitStruct.Multimode = LL_ADC_MULTI_INDEPENDENT;
   LL_ADC_CommonInit(__LL_ADC_COMMON_INSTANCE(ADC3), &ADC_CommonInitStruct);
 
@@ -2726,38 +2727,30 @@ void startup(void const * argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
+
+  buzzer_set_frequency(500);
+  buzzer_on();
+  vTaskDelay(pdMS_TO_TICKS(200));
+  buzzer_off();
+
   battery_init();
 
+  ws2812b_init();
+  ws2812b_set_color(0, 255, 255, 255);
+  ws2812b_set_color(1, 100, 0, 0);
+  ws2812b_set_color(2, 0, 100, 0);
+  ws2812b_set_color(3, 0, 0, 100);
+  ws2812b_flush();
   /**
    * @note User must ensure the parameters in `drv8874_init()` are correct,
    * or the motor driver may be damaged. `torque_coefficient` and `encoder_round_count`
    * are the most important parameters for different DC motors.
    */
   drv8874_init();
-  drv8874_set_position_mode(&motors[0]);
-  drv8874_set_position_mode(&motors[1]);
-  drv8874_set_position_mode(&motors[2]);
-  drv8874_set_position_mode(&motors[3]);
-  drv8874_set_position(&motors[0], 10*3.14159);
-  drv8874_set_position(&motors[1], 10*3.14159);
-  drv8874_set_position(&motors[2], 10*3.14159);
-  drv8874_set_position(&motors[3], 10*3.14159);
-  drv8874_start(&motors[0]);
+  drv8874_set_current_mode(&motors[1]);
+  drv8874_set_current(&motors[1], 0.1);
   drv8874_start(&motors[1]);
-  drv8874_start(&motors[2]);
-  drv8874_start(&motors[3]);
-  ws2812b_init();
 
-  ws2812b_set_color(0, 255, 255, 255);
-  ws2812b_set_color(1, 100, 0, 0);
-  ws2812b_set_color(2, 0, 100, 0);
-  ws2812b_set_color(3, 0, 0, 100);
-  ws2812b_flush();
-
-  buzzer_set_frequency(500);
-  buzzer_on();
-  vTaskDelay(pdMS_TO_TICKS(200));
-  buzzer_off();
   /* Infinite loop */
   for(;;)
   {

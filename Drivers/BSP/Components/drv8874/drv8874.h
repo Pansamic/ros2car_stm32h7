@@ -39,7 +39,7 @@ typedef enum drv8874_direction_t{
 typedef enum drv8874_mode_t{
     DRV8874_MODE_POSITION = 0,
     DRV8874_MODE_VELOCITY = 1,
-    DRV8874_MODE_TORQUE = 2
+    DRV8874_MODE_CURRENT = 2
 }drv8874_mode_t;
 
 typedef struct drv8874_t{
@@ -58,9 +58,6 @@ typedef struct drv8874_t{
     /* 1 indicates reverse encoder value */
     uint8_t reverse_encoder;
 
-    /* Motor torque coefficient */
-    drv8874_float_t torque_coefficient;
-
     /* Motor turndown ratio */
     uint16_t turndown_ratio;
 
@@ -70,10 +67,16 @@ typedef struct drv8874_t{
 
     /* A proximate value of max velocity of motor, unit: rad/s.
      * Calculate feed forward with this parameter and `pwm_tim_autoreload`. */
-    drv8874_float_t max_velocity;
+    // drv8874_float_t max_velocity;
 
-    /* External resistor value, unit: ohm */
-    uint32_t ext_resistor;
+    /* back electromotive force constant of rotor, not motor reducer output shaft. unit: V/(rad/s) */
+    drv8874_float_t back_emf_constant;
+
+    /* armature resistance, unit:ohm */
+    drv8874_float_t armature_res;
+
+    /* External current sensing resistor value, unit: ohm */
+    uint32_t cur_sense_res;
 
     /* DRV8874 PH pin. 1 is forward, 0 is reverse */
     GPIO_TypeDef* ctrl_gpio_port;
@@ -113,14 +116,14 @@ typedef struct drv8874_t{
     drv8874_float_t error_vel;
     drv8874_float_t control_vel;
 
-    /* Torque PI control parameters */
-    drv8874_float_t kp_torq;
-    drv8874_float_t ki_torq;
-    drv8874_float_t kd_torq;
-    drv8874_float_t integral_error_torq;
-    drv8874_float_t prev_error_torq;
-    drv8874_float_t error_torq;
-    drv8874_float_t control_torq;
+    /* Current PI control parameters */
+    drv8874_float_t kp_cur;
+    drv8874_float_t ki_cur;
+    drv8874_float_t kd_cur;
+    drv8874_float_t integral_error_cur;
+    drv8874_float_t prev_error_cur;
+    drv8874_float_t error_cur;
+    drv8874_float_t control_cur;
 
 
     /* Target angular velocity, unit: rad/s */
@@ -131,10 +134,10 @@ typedef struct drv8874_t{
     drv8874_float_t target_position;
     /* Current angular position, unit:rad */
     drv8874_float_t current_position;
-    /* Target torque, unit: Nm */
-    drv8874_float_t target_torque;
-    /* Current torque, unit: Nm */
-    drv8874_float_t current_torque;
+    /* Target current, unit: A */
+    drv8874_float_t target_current;
+    /* Current current, unit: A */
+    drv8874_float_t current_current;
 
 } drv8874_t;
 
@@ -162,12 +165,12 @@ drv8874_err_t drv8874_set_position_mode(drv8874_t *dev);
  */
 drv8874_err_t drv8874_set_velocity_mode(drv8874_t *dev);
 /**
- * @brief Set motor to torque control mode.
+ * @brief Set motor to current control mode.
  * 
  * @param dev Pointer to DRV8874 driver instance.
  * @return drv8874_err_t 
  */
-drv8874_err_t drv8874_set_torque_mode(drv8874_t *dev);
+drv8874_err_t drv8874_set_current_mode(drv8874_t *dev);
 /**
  * @brief Set target position for the motor.
  * 
@@ -185,13 +188,13 @@ drv8874_err_t drv8874_set_position(drv8874_t *dev, drv8874_float_t position);
  */
 drv8874_err_t drv8874_set_velocity(drv8874_t *dev, drv8874_float_t velocity);
 /**
- * @brief Set target torque for the motor.
+ * @brief Set target current for the motor.
  * 
  * @param dev Pointer to DRV8874 driver instance.
- * @param torque Target torque in Newton-meters.
+ * @param current Target current in Newton-meters.
  * @return drv8874_err_t 
  */
-drv8874_err_t drv8874_set_torque(drv8874_t *dev, drv8874_float_t torque);
+drv8874_err_t drv8874_set_current(drv8874_t *dev, drv8874_float_t current);
 /**
  * @brief Set the direction of motor rotation.
  * 
@@ -204,7 +207,7 @@ drv8874_err_t drv8874_set_torque(drv8874_t *dev, drv8874_float_t torque);
 drv8874_err_t drv8874_set_direction(drv8874_t *dev, drv8874_direction_t direction);
 /**
  * @brief Start the motor by enabling its control logic and PWM output.
- * @note This function will reset encoder count, current position, velocity, and torque to zero.
+ * @note This function will reset encoder count, current position, velocity, and current to zero.
  * @param dev Pointer to DRV8874 driver instance.
  * @return drv8874_err_t 
  */
@@ -223,7 +226,7 @@ drv8874_err_t drv8874_brake(drv8874_t *dev);
  * @return drv8874_err_t 
  */
 drv8874_err_t drv8874_stop(drv8874_t *dev);
-drv8874_err_t drv8874_set_torque_ctrl_param(drv8874_t *dev, drv8874_float_t kp, drv8874_float_t ki);
+drv8874_err_t drv8874_set_current_ctrl_param(drv8874_t *dev, drv8874_float_t kp, drv8874_float_t ki);
 drv8874_err_t drv8874_set_velocity_ctrl_param(drv8874_t *dev, drv8874_float_t kp, drv8874_float_t ki);
 drv8874_err_t drv8874_set_position_ctrl_param(drv8874_t *dev, drv8874_float_t kp, drv8874_float_t kd);
 #endif // __DRV8874_H__
