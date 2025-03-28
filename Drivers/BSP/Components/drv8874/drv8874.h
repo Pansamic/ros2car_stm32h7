@@ -24,7 +24,7 @@
 #define DRV8874_MOTOR_AMOUNT 4
 
 /* User can change the float precision by changing the following line. */
-typedef float drv8874_float_t;
+typedef double drv8874_float_t;
 
 typedef enum drv8874_err_t{
     DRV8874_OK = 0,
@@ -142,7 +142,7 @@ typedef struct drv8874_t{
 } drv8874_t;
 
 extern drv8874_t motors[4];
-extern uint32_t drv8874_timer_count;
+extern volatile uint32_t drv8874_timer_count;
 
 /**
  * @brief Initialize 4 DRV8874 motor driver instances and create control task.

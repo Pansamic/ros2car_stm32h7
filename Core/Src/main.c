@@ -2390,11 +2390,14 @@ static void MX_GPIO_Init(void)
   LL_GPIO_SetOutputPin(SPI_CS_OLED_GPIO_Port, SPI_CS_OLED_Pin);
 
   /**/
+  LL_GPIO_SetOutputPin(ETH_RESET_GPIO_Port, ETH_RESET_Pin);
+
+  /**/
   LL_GPIO_ResetOutputPin(OLED_DC_GPIO_Port, OLED_DC_Pin);
 
   /**/
-  LL_GPIO_ResetOutputPin(GPIOE, ETH_RESET_Pin|CTRL_MOTOR4_Pin|CTRL_MOTOR3_Pin|FAULT_MOTOR4_Pin
-                          |CTRL_MOTOR2_Pin|CTRL_MOTOR1_Pin);
+  LL_GPIO_ResetOutputPin(GPIOE, CTRL_MOTOR4_Pin|CTRL_MOTOR3_Pin|FAULT_MOTOR4_Pin|CTRL_MOTOR1_Pin
+                          |CTRL_MOTOR2_Pin);
 
   /**/
   GPIO_InitStruct.Pin = SPI_CS_EXT_Pin;
@@ -2434,7 +2437,7 @@ static void MX_GPIO_Init(void)
 
   /**/
   GPIO_InitStruct.Pin = ETH_RESET_Pin|CTRL_MOTOR4_Pin|CTRL_MOTOR3_Pin|FAULT_MOTOR4_Pin
-                          |CTRL_MOTOR2_Pin|CTRL_MOTOR1_Pin;
+                          |CTRL_MOTOR1_Pin|CTRL_MOTOR2_Pin;
   GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
   GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
@@ -2747,8 +2750,10 @@ void startup(void const * argument)
    * are the most important parameters for different DC motors.
    */
   drv8874_init();
-  drv8874_set_current_mode(&motors[1]);
-  drv8874_set_current(&motors[1], 0.1);
+  drv8874_set_velocity_mode(&motors[1]);
+  drv8874_set_velocity(&motors[1], 6.28);
+  // drv8874_set_current_mode(&motors[1]);
+  // drv8874_set_current(&motors[1], 0.1);
   drv8874_start(&motors[1]);
 
   /* Infinite loop */

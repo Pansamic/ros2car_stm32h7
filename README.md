@@ -50,7 +50,8 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
 
 ## todo
 
-- [ ] Fix DRV8874 current sensing ADC issue.
+- [x] Fix DRV8874 current sensing ADC issue.
+- [ ] Adjust motor controller parameters.
 - [ ] Fix ICM-42688-P SPI operation fault.
 - [ ] Configure ICM-42688-P to generate data-ready signal.
 - [ ] Add ICM-42688-P data-ready GPIO interrupt detection and IMU data reading.
