@@ -2750,8 +2750,10 @@ void startup(void const * argument)
    * are the most important parameters for different DC motors.
    */
   drv8874_init();
-  drv8874_set_velocity_mode(&motors[1]);
-  drv8874_set_velocity(&motors[1], 6.28);
+  drv8874_set_position_mode(&motors[1]);
+  drv8874_set_position(&motors[1], 6.28);
+  // drv8874_set_velocity_mode(&motors[1]);
+  // drv8874_set_velocity(&motors[1], 6.28);
   // drv8874_set_current_mode(&motors[1]);
   // drv8874_set_current(&motors[1], 0.1);
   drv8874_start(&motors[1]);
