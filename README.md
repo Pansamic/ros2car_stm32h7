@@ -2,7 +2,7 @@
 
 This is a project designed for small vehicle with high performance SLAM requirements.
 
-![pcb_top_view](https://github.com/pansamic/ros2car_stm32h7/docs/pcb_top_view.png)
+![pcb_top_view](docs/pcb_top_view.png)
 
 ## feature
 
