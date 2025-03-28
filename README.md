@@ -32,7 +32,7 @@ This is a project designed for small vehicle with high performance SLAM requirem
 * Log system with FATFS storage and visualization support.
 * USB Mass storage + DFU + VCP.
 
-### pcb electronics
+### electrical specification
 
 * 8 - 24V input; 5V 8A power supply for small computer; 5V 8A power supply for servos.
 * ±30kV ESD per IEC 61000-4-2(Air) protection for external function pins.
@@ -48,4 +48,27 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
 
 ## contribute
 
-## license
+## todo
+
+- [ ] Fix DRV8874 current sensing ADC issue.
+- [ ] Fix ICM-42688-P SPI operation fault.
+- [ ] Configure ICM-42688-P to generate data-ready signal.
+- [ ] Add ICM-42688-P data-ready GPIO interrupt detection and IMU data reading.
+- [ ] Add DC motor encoder round pulses auto-detection.
+- [ ] Add external sensor trigger and camera strobe signal detection.
+- [ ] Use ethernet MAC PPS output signal to align trigger signals.
+- [ ] Fix ethernet communication.
+- [ ] Test OLED driver.
+- [ ] Refactor and test RX8900 real-time chip driver.
+- [ ] Add Micro-XRCE-DDS ROS2 node.
+- [ ] Add Micro-XRCE-DDS IMU message publisher.
+- [ ] Add Micro-XRCE-DDS car control message subscriber.
+- [ ] Design a new logger for variable monitoring and logging with different loggers.
+- [ ] Add IEEE1588v2 time synchronization support.
+- [ ] Add GNSS module driver.
+- [ ] Add GNSS time synchronization for ethernet MAC timestamp.
+- [ ] Configure USB driver to VCP+MSC+DFU classes.
+- [ ] Add SD card FATFS support.
+- [ ] Add power drop detection and file system saver in emergency.
+- [ ] Add SBUS remote controller support.
+- [ ] Add bluetooth module support (AT instructions)
