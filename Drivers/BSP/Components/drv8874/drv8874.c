@@ -159,7 +159,7 @@ void drv8874_get_feedback(drv8874_t *dev)
 
     DRV8874_LOG_TRACE("DRV8874 motor %u encoder count %d\n", dev->id, dev->encoder_count);
 
-    DRV8874_LOG_INFO("DRV8874 motor %u actual position %f rad.\n", dev->id, dev->current_position);
+    DRV8874_LOG_DEBUG("DRV8874 motor %u actual position %f rad.\n", dev->id, dev->current_position);
 
     drv8874_float_t update_interval = drv8874_get_time() - dev->last_update_time;
 
